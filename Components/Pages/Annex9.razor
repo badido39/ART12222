@@ -1,0 +1,361 @@
+﻿@page "/annex9"
+@using ART122.Data
+@using ART122.Services
+@inject IDeclarationService DeclarationService
+@inject IJSRuntime JS
+
+@* ── Toolbar ───────────────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
+    <a href="/" class="btn btn-outline-secondary btn-sm">← Retour</a>
+    <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 fw-semibold">الشهر:</label>
+        <select class="form-select form-select-sm" style="width:160px;"
+                @bind="selectedMonth" @bind:after="Recalculate">
+            @for (int m = 1; m <= 12; m++)
+            {
+                var label = new DateTime(2026, m, 1).ToString("MMMM",
+                new System.Globalization.CultureInfo("ar-DZ"));
+                <option value="@m">@label</option>
+            }
+        </select>
+        <button class="btn btn-primary btn-sm" @onclick="ExportPdf"
+                disabled="@exporting">
+            @if (exporting)
+            {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            📄 طباعة الملحق 09
+        </button>
+    </div>
+</div>
+
+@* ── Printable content ─────────────────────────────────────────────────── *@
+<div id="annex9-content" dir="rtl"
+     style="background:white;padding:20px;font-family:'Cairo','Arial',sans-serif;">
+
+    @* Header *@
+    <div style="text-align:center;margin-bottom:6px;">
+        <div style="font-weight:bold;font-size:1.05rem;">
+            الجمهورية الجزائرية الديمقراطية الشعبية
+        </div>
+        <div style="font-weight:bold;">وزارة المالية — المديرية العامة للضرائب</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;
+                margin-bottom:6px;font-size:.85rem;">
+        <div>مديرية: الوادي</div>
+        <div>قباضة الضرائب لـ: المركز الجواري الدبيلة</div>
+    </div>
+
+    <div style="text-align:center;font-weight:bold;border:2px solid black;
+                padding:8px;margin-bottom:16px;font-size:.95rem;">
+        الوضعية الإحصائية لتطهير الديون الجبائية<br />
+        <span style="font-size:.85rem;">
+            (المادة 122 من قانون المالية لسنة 2026)
+        </span><br />
+        <span style="font-size:.85rem;font-weight:normal;">
+            شهر: @monthLabel / 2026
+        </span>
+    </div>
+
+    @if (all == null)
+    {
+        <div>جارٍ التحميل...</div>
+    }
+    else
+    {
+        @* ── Main stats table ──────────────────────────────────────────── *@
+        <table style="width:100%;border-collapse:collapse;font-size:.72rem;text-align:center;">
+            <thead>
+                <tr style="background:#1a1a2e;color:white;">
+                    <th rowspan="2" style="@th;width:120px;">طريقة تسوية الدين (**)</th>
+                    <th colspan="3" style="@th;">عدد المكتتبين</th>
+                    <th colspan="4" style="@th;">مبلغ الدين الجبائي إلى تاريخ 31/12/2025</th>
+                    <th colspan="3" style="@th;">التطهير 2026</th>
+                    <th rowspan="2" style="@th;width:90px;">بواقي التحصيل</th>
+                </tr>
+                <tr style="background:#2c2c54;color:white;">
+                    <th style="@th;">المسددون كلياً</th>
+                    <th style="@th;">على أقساط</th>
+                    <th style="@th;">المجموع</th>
+                    <th style="@th;">الحقوق البسيطة</th>
+                    <th style="@th;">غ. الوعاء</th>
+                    <th style="@th;">غ. التحصيل</th>
+                    <th style="@th;">المبلغ الكلي</th>
+                    <th style="@th;">التحصيل 70%</th>
+                    <th style="@th;">التخفيض 30%</th>
+                    <th style="@th;">إلغاء الغرامات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @* Row: دفعة واحدة *@
+                <tr>
+                    <td style="@td;font-weight:bold;text-align:right;padding-right:8px;">
+                        دفعة واحدة (ك)
+                    </td>
+                    <td style="@td;">@dafaaCount</td>
+                    <td style="@td;color:#aaa;">—</td>
+                    <td style="@td;font-weight:bold;">@dafaaCount</td>
+                    <td style="@td;">@Fmt(dafaaDroit)</td>
+                    <td style="@td;">@Fmt(dafaaPA)</td>
+                    <td style="@td;">@Fmt(dafaaPR)</td>
+                    <td style="@td;font-weight:bold;">@Fmt(dafaaTotal)</td>
+                    <td style="@td;color:green;font-weight:bold;">@Fmt(dafaa70)</td>
+                    <td style="@td;color:purple;">@Fmt(dafaaReduction)</td>
+                    <td style="@td;color:darkorange;">@Fmt(dafaaAlgha)</td>
+                    <td style="@td;color:red;font-weight:bold;">@Fmt(dafaaRestant)</td>
+                </tr>
+
+                @* Row: على أقساط *@
+                <tr style="background:#fafafa;">
+                    <td style="@td;font-weight:bold;text-align:right;padding-right:8px;">
+                        على أقساط (ق)
+                    </td>
+                    <td style="@td;">@aqsatFullyPaid</td>
+                    <td style="@td;">@aqsatPartial</td>
+                    <td style="@td;font-weight:bold;">@aqsatCount</td>
+                    <td style="@td;">@Fmt(aqsatDroit)</td>
+                    <td style="@td;">@Fmt(aqsatPA)</td>
+                    <td style="@td;">@Fmt(aqsatPR)</td>
+                    <td style="@td;font-weight:bold;">@Fmt(aqsatTotal)</td>
+                    <td style="@td;color:green;font-weight:bold;">@Fmt(aqsat70)</td>
+                    <td style="@td;color:purple;">@Fmt(aqsatReduction)</td>
+                    <td style="@td;color:darkorange;">@Fmt(aqsatAlgha)</td>
+                    <td style="@td;color:red;font-weight:bold;">@Fmt(aqsatRestant)</td>
+                </tr>
+
+                @* Total row *@
+                <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #333;">
+                    <td style="@td;text-align:right;padding-right:8px;">المجموع</td>
+                    <td style="@td;">@(dafaaCount + aqsatFullyPaid)</td>
+                    <td style="@td;">@aqsatPartial</td>
+                    <td style="@td;">@(dafaaCount + aqsatCount)</td>
+                    <td style="@td;">@Fmt(dafaaDroit + aqsatDroit)</td>
+                    <td style="@td;">@Fmt(dafaaPA + aqsatPA)</td>
+                    <td style="@td;">@Fmt(dafaaPR + aqsatPR)</td>
+                    <td style="@td;">@Fmt(dafaaTotal + aqsatTotal)</td>
+                    <td style="@td;color:green;">@Fmt(dafaa70 + aqsat70)</td>
+                    <td style="@td;color:purple;">@Fmt(dafaaReduction + aqsatReduction)</td>
+                    <td style="@td;color:darkorange;">@Fmt(dafaaAlgha + aqsatAlgha)</td>
+                    <td style="@td;color:red;">@Fmt(dafaaRestant + aqsatRestant)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        @* ── Versements breakdown table (aqsat only) ───────────────────── *@
+        @if (aqsatDecls.Any())
+        {
+            <div style="margin-top:20px;">
+                <div style="font-weight:bold;font-size:.8rem;margin-bottom:6px;
+                                    border-bottom:1px solid #ccc;padding-bottom:4px;">
+                    تفصيل تحصيل الأقساط إلى غاية نهاية شهر @monthLabel
+                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:.72rem;text-align:center;">
+                    <thead>
+                        <tr style="background:#162b52;color:white;">
+                            <th style="@th;">#</th>
+                            <th style="@th;text-align:right;">المكلف</th>
+                            <th style="@th;">عدد الأقساط</th>
+                            <th style="@th;">المسدَّد</th>
+                            <th style="@th;">المتبقي</th>
+                            <th style="@th;">الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in aqsatDecls.OrderBy(d => d.Number))
+                        {
+                            var paidAmt = d.Versements
+                            .Where(v => v.EstPaye &&
+                            v.DatePaiement.HasValue &&
+                            v.DatePaiement.Value <= cutoff)
+                            .Sum(v => v.Montant);
+                            var totalAmt = d.Versements.Sum(v => v.Montant);
+                            var remaining = totalAmt - paidAmt;
+                            var allPaid = d.Versements.Any() && d.Versements.All(v => v.EstPaye);
+                            var hasLate = d.Versements.Any(v =>
+                            !v.EstPaye && v.DatePrevue.Date < cutoff.Date);
+
+                            <tr>
+                                <td style="@td;">@d.Number</td>
+                                <td style="@td;text-align:right;">@d.RedevableInfo.FullName</td>
+                                <td style="@td;">
+                                    @d.Versements.Count(v => v.EstPaye && v.DatePaiement <= cutoff)
+                                    / @d.Versements.Count
+                                </td>
+                                <td style="@td;color:green;font-weight:bold;">@Fmt(paidAmt)</td>
+                                <td style="@td;color:red;">@Fmt(remaining)</td>
+                                <td style="@td;">
+                                    @if (allPaid)
+                                    {
+                                        <span style="color:green;font-weight:bold;">✅ مكتمل</span>
+                                    }
+                                    else if (hasLate)
+                                    {
+                                        <span style="color:red;">⚠️ متأخر</span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:gray;">⏳ جارٍ</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @* ── Footer ────────────────────────────────────────────────────── *@
+        <div style="font-size:.72rem;margin-top:8px;color:#555;">
+            (**) طريقة تسوية الدين: كليا (ك) أو على أقساط (ق)
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:28px;font-size:.82rem;">
+            <div>
+                حررت بـ: المركز الجواري الدبيلة &nbsp;&nbsp;
+                في: @DateTime.Today.ToString("dd/MM/yyyy")
+            </div>
+            <div style="text-align:center;">
+                قابض الضرائب:<br /><br /><br />
+                (الإمضاء والختم)
+            </div>
+        </div>
+        <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#888;">
+            الملحق 09
+        </div>
+    }
+</div>
+
+@* CDN *@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+    window.exportAnnex9Pdf = async (filename) => {
+        const el = document.getElementById('annex9-content');
+        if (!el) return;
+        const canvas = await html2canvas(el, {
+            scale: 2, useCORS: true, backgroundColor: '#ffffff'
+        });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const ratio = pageW / canvas.width;
+        const scaledH = canvas.height * ratio;
+        let y = 0;
+        while (y < scaledH) {
+            if (y > 0) pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, -y, pageW, scaledH);
+            y += pageH;
+        }
+        pdf.save(filename);
+    };
+</script>
+
+@code {
+    List<Declaration>? all;
+    bool exporting = false;
+
+    int selectedMonth = DateTime.Today.Month;
+    string monthLabel = string.Empty;
+    DateTime cutoff;
+
+    // دفعة واحدة
+    List<Declaration> dafaaDecls = new();
+    int dafaaCount;
+    decimal dafaaDroit, dafaaPA, dafaaPR, dafaaTotal, dafaa70,
+            dafaaReduction, dafaaAlgha, dafaaRestant;
+
+    // على أقساط
+    List<Declaration> aqsatDecls = new();
+    int aqsatCount, aqsatFullyPaid, aqsatPartial;
+    decimal aqsatDroit, aqsatPA, aqsatPR, aqsatTotal, aqsat70,
+            aqsatReduction, aqsatAlgha, aqsatRestant;
+
+    const string th = "border:1px solid rgba(255,255,255,0.2);padding:5px 4px;vertical-align:middle;";
+    const string td = "border:1px solid #ddd;padding:5px 4px;vertical-align:middle;";
+
+    protected override async Task OnInitializedAsync()
+    {
+        all = await DeclarationService.GetAllAsync();
+        Recalculate();
+    }
+
+    void Recalculate()
+    {
+        if (all == null) return;
+
+        cutoff = new DateTime(2026, selectedMonth,
+            DateTime.DaysInMonth(2026, selectedMonth));
+
+        monthLabel = new DateTime(2026, selectedMonth, 1)
+            .ToString("MMMM", new System.Globalization.CultureInfo("ar-DZ"));
+
+        // Only declarations filed on or before end of selected month
+        var inScope = all.Where(d => d.Date <= cutoff).ToList();
+
+        dafaaDecls = inScope.Where(d => d.DafaaWahida).ToList();
+        aqsatDecls = inScope.Where(d => d.AlaAqsat).ToList();
+
+        // ── دفعة واحدة ──────────────────────────────────────────────────────
+        dafaaCount = dafaaDecls.Count;
+        dafaaDroit = dafaaDecls.Sum(d => d.Droit);
+        dafaaPA = dafaaDecls.Sum(d => d.PA);
+        dafaaPR = dafaaDecls.Sum(d => d.PR);
+        dafaaTotal = dafaaDecls.Sum(d => d.MontantTotal);
+        dafaa70 = dafaaDecls.Sum(d => d.MontantRestant);
+
+        // التخفيض 30%: only granted once DG accepts
+        dafaaReduction = dafaaDecls
+            .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
+            .Sum(d => Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero));
+
+        // إلغاء الغرامات: only DG-approved amounts
+        dafaaAlgha = dafaaDecls
+            .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
+            .Sum(d => d.AlghaPA + d.AlghaPR);
+
+        // بواقي التحصيل = المبلغ الكلي − التحصيل 70% − التخفيض 30% − إلغاء الغرامات
+        dafaaRestant = dafaaTotal - dafaa70 - dafaaReduction - dafaaAlgha;
+
+        // ── على أقساط ────────────────────────────────────────────────────────
+        aqsatCount = aqsatDecls.Count;
+        aqsatFullyPaid = aqsatDecls.Count(d =>
+            d.Versements.Any() &&
+            d.Versements.All(v => v.EstPaye && v.DatePaiement <= cutoff));
+        aqsatPartial = aqsatCount - aqsatFullyPaid;
+        aqsatDroit = aqsatDecls.Sum(d => d.Droit);
+        aqsatPA = aqsatDecls.Sum(d => d.PA);
+        aqsatPR = aqsatDecls.Sum(d => d.PR);
+        aqsatTotal = aqsatDecls.Sum(d => d.MontantTotal);
+        aqsat70 = aqsatDecls.Sum(d => d.MontantRestant);
+
+        // التخفيض 30%: only granted once DG accepts
+        aqsatReduction = aqsatDecls
+            .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
+            .Sum(d => Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero));
+
+        // إلغاء الغرامات: only DG-approved amounts
+        aqsatAlgha = aqsatDecls
+            .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
+            .Sum(d => d.AlghaPA + d.AlghaPR);
+
+        // بواقي التحصيل = المبلغ الكلي − التحصيل 70% − التخفيض 30% − إلغاء الغرامات
+        aqsatRestant = aqsatTotal - aqsat70 - aqsatReduction - aqsatAlgha;
+    }
+
+    async Task ExportPdf()
+    {
+        exporting = true;
+        StateHasChanged();
+        await Task.Delay(50);
+        await JS.InvokeVoidAsync("exportAnnex9Pdf",
+            $"annex9_art122_{selectedMonth:D2}_2026.pdf");
+        exporting = false;
+    }
+
+    static string Fmt(decimal v) =>
+        v == 0 ? "—" :
+        string.Format("{0:N0}", Math.Round(v, 0, MidpointRounding.AwayFromZero))
+              .Replace(",", "\u00A0") + ",00";
+}

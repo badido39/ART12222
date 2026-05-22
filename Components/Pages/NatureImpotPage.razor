@@ -1,0 +1,132 @@
+﻿@page "/admin/nature-impot"
+@using ART122.Data
+@using ART122.Services
+@inject INatureImpotService NatureService
+
+<h3>Tax Types (Nature Impot)</h3>
+
+<div class="container">
+
+    <!-- FORM -->
+    <div class="card mb-3">
+        <div class="card-header bg-primary text-white">
+            Add / Edit Tax Type
+        </div>
+
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <div class="col-md-8">
+                    <label class="form-label">Name</label>
+                    <input class="form-control"
+                           placeholder="e.g. TVA"
+                           @bind="model.Name" />
+                </div>
+
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-success w-100"
+                            @onclick="Save">
+                        @(editMode ? "Update" : "Add")
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- LIST -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            Existing Tax Types
+        </div>
+
+        <div class="card-body">
+
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th width="200px">Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var n in list)
+                    {
+                        <tr>
+                            <td>@n.Name</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm"
+                                        @onclick="() => Edit(n)">
+                                    Edit
+                                </button>
+
+                                <button class="btn btn-danger btn-sm"
+                                        @onclick="() => Delete(n.Id)">
+                                    Delete
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+
+        </div>
+    </div>
+
+</div>
+
+@code {
+
+    List<NatureImpot> list = new();
+    NatureImpot model = new();
+
+    bool editMode = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    async Task Load()
+    {
+        list = await NatureService.GetAllAsync();
+    }
+
+    async Task Save()
+    {
+        if (editMode)
+        {
+            await NatureService.UpdateAsync(model);
+        }
+        else
+        {
+            await NatureService.CreateAsync(model);
+        }
+
+        model = new NatureImpot();
+        editMode = false;
+
+        await Load();
+    }
+
+    void Edit(NatureImpot item)
+    {
+        model = new NatureImpot
+        {
+            Id = item.Id,
+            Name = item.Name
+        };
+
+        editMode = true;
+    }
+
+    async Task Delete(int id)
+    {
+        await NatureService.DeleteAsync(id);
+        await Load();
+    }
+}

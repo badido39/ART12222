@@ -1,0 +1,668 @@
+﻿@page "/redevables"
+@using ART122.Data
+@using ART122.Services
+@inject IRedevableService RedevableService
+@inject IDeclarationService DeclarationService
+@inject IArt122PdfService PdfService
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<h3>Redevables</h3>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="w-50">
+                <label class="form-label">Search by BP</label>
+                <input class="form-control"
+                       placeholder="Type BP..."
+                       value="@searchBp"
+                       @oninput="OnSearchChanged" />
+            </div>
+            <a href="/annex5" class="btn btn-outline-primary btn-sm">
+                📋 سجل الملحق 05
+            </a>
+        </div>
+
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>BP</th>
+                    <th>Full Name</th>
+                    <th>Adresse</th>
+                    <th>NIF</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in filtered ?? [])
+                {
+                    var alreadyRegistered = registeredIds.Contains(r.Id);
+                    <tr>
+                        <td>@r.BP</td>
+                        <td>@r.FullName</td>
+                        <td>@r.Adresse</td>
+                        <td>@r.NIF</td>
+                        <td>
+
+                            <button class="btn btn-sm btn-info"
+                                    @onclick="() => ToggleExpand(r.Id)">
+                                @(expandedId == r.Id ? "Hide" : "View Impots")
+                            </button>
+
+                            <button class="btn btn-sm btn-warning ms-2"
+                                    @onclick="() => Edit(r)">
+                                Edit
+                            </button>
+
+                            <button class="btn btn-sm btn-danger ms-2"
+                                    @onclick="() => ConfirmDelete(r)">
+                                Delete
+                            </button>
+                            <a class="btn btn-sm btn-outline-dark"
+                               href="/redevable-details/@r.Id">
+                                👁 Détails
+                            </a>
+                            @if (alreadyRegistered)
+                            {
+                                <button class="btn btn-sm btn-success ms-2" disabled
+                                        title="مسجل مسبقاً">
+                                    ✅ مسجل
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-secondary ms-2"
+                                        @onclick="() => OpenPrintModal(r)">
+                                    Enregistrer La Demande ⇒
+                                </button>
+                            }
+                        </td>
+                    </tr>
+
+                    @if (expandedId == r.Id)
+                    {
+                        <tr>
+                            <td colspan="5">
+                                @if (r.Impots == null || !r.Impots.Any())
+                                {
+                                    <div class="text-muted">No impots found</div>
+                                }
+                                else
+                                {
+                                    <table class="table table-sm table-bordered mt-2">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Nature</th>
+                                                <th>Year</th>
+                                                <th>Role</th>
+                                                <th>Droit</th>
+                                                <th>PA</th>
+                                                <th>PR</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var i in r.Impots)
+                                            {
+                                                <tr>
+                                                    <td>@i.NatureImpot?.Name</td>
+                                                    <td>@i.YearImpot</td>
+                                                    <td>@i.RoleNumber</td>
+                                                    <td>@i.Droit</td>
+                                                    <td>@i.PA</td>
+                                                    <td>@i.PR</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* ── Print Modal ───────────────────────────────────────────────────────────── *@
+@if (showPrintModal && printTarget != null)
+{
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+
+                <div class="modal-header bg-secondary text-white">
+                    <h5 class="modal-title">🖨 تصريح الاكتتاب — Art.122</h5>
+                    <button class="btn-close btn-close-white"
+                            @onclick="ClosePrintModal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <p class="fw-bold mb-0">@printTarget.FullName</p>
+                    <p class="text-muted small">
+                        BP: @printTarget.BP — NIF: @printTarget.NIF
+                    </p>
+
+                    @if (!string.IsNullOrEmpty(printError))
+                    {
+                        <div class="alert alert-warning mt-2">@printError</div>
+                    }
+
+                    <hr />
+
+                    @* ── Payment method ──────────────────────────────────────── *@
+                    <label class="form-label fw-semibold">كيفية التسديد:</label>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio"
+                               name="payMode" id="rdDafaa"
+                               checked="@printDafaaWahida"
+                               @onchange="() => SetPayMode(true)" />
+                        <label class="form-check-label" for="rdDafaa">
+                            دفعة واحدة — عند إيداع هذا التصريح
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio"
+                               name="payMode" id="rdAqsat"
+                               checked="@(!printDafaaWahida)"
+                               @onchange="() => SetPayMode(false)" />
+                        <label class="form-check-label" for="rdAqsat">
+                            على أقساط — وفق جدول زمني للدفع
+                        </label>
+                    </div>
+
+                    @* ── Installment section (only when على أقساط) ───────────── *@
+                    @if (!printDafaaWahida)
+                    {
+                        <div class="card border-primary mb-3">
+                            <div class="card-header bg-primary text-white py-2">
+                                جدول الأقساط
+                            </div>
+                            <div class="card-body">
+
+                                @* Number of installments *@
+                                <div class="row align-items-end mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">
+                                            عدد الأقساط
+                                            <small class="text-muted">
+                                                (آخر قسط قبل 31/12/2026)
+                                            </small>
+                                        </label>
+                                        <input type="number" class="form-control"
+                                               min="1" max="@MaxDofaa"
+                                               value="@nbrDofaa"
+                                               @onchange="OnNbrDofaaChanged" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">
+                                            المبلغ الإجمالي المتبقي
+                                        </label>
+                                        <input class="form-control" readonly
+                                               value="@FmtDecimal(printMontantRestant)" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">
+                                            قسط واحد (تقريباً)
+                                        </label>
+                                        <input class="form-control" readonly
+                                               value="@FmtDecimal(SingleInstallment)" />
+                                    </div>
+                                </div>
+
+                                @* Validation warning *@
+                                @if (versementRows.Any() &&
+                                                        versementRows.Last().DatePrevue > new DateTime(2026, 12, 31))
+                                {
+                                    <div class="alert alert-danger py-2">
+                                        ⚠️ آخر قسط يتجاوز تاريخ 31/12/2026. قلّل عدد الأقساط أو عدّل التواريخ.
+                                    </div>
+                                }
+
+                                @* Installment rows grid *@
+                                @if (versementRows.Count > 0)
+                                {
+                                    <table class="table table-sm table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width:50px;">#</th>
+                                                <th>تاريخ الاستحقاق</th>
+                                                <th>المبلغ (دج)</th>
+
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @for (int i = 0; i < versementRows.Count; i++)
+                                            {
+                                                var idx = i;
+                                                var row = versementRows[idx];
+                                                var isLast = idx == versementRows.Count - 1;
+                                                var dateOver = row.DatePrevue > new DateTime(2026, 12, 31);
+
+                                                <tr class="@(dateOver ? "table-danger" : "")">
+                                                    <td class="text-center fw-bold">
+                                                        @(idx + 1)
+                                                    </td>
+                                                    <td>
+                                                        <input type="date"
+                                                               class="form-control form-control-sm @(dateOver ? "is-invalid" : "")"
+                                                               value="@row.DatePrevue.ToString("yyyy-MM-dd")"
+                                                               max="2026-12-31"
+                                                               @onchange="e => OnDateChanged(idx, e)" />
+                                                    </td>
+                                                    <td>
+                                                        <input type="number"
+                                                               class="form-control form-control-sm"
+                                                               value="@row.Montant"
+                                                               @onchange="e => OnMontantChanged(idx, e)" />
+                                                    </td>
+
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="table-secondary fw-bold">
+                                                <td colspan="2" class="text-end">Total</td>
+                                                <td>@FmtDecimal(versementRows.Sum(v => v.Montant))</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                }
+                            </div>
+                        </div>
+                    }
+                    @* ── Dafaa Wahida: Quittance fields ──────────────────────────────────── *@
+                    @if (printDafaaWahida)
+                    {
+                        <div class="row g-2 mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">رقم الوصل (Quittance)</label>
+                                <input class="form-control"
+                                       placeholder="رقم الوصل..."
+                                       @bind="dafaaNumeroQuittance" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">تاريخ الدفع</label>
+                                <input type="date" class="form-control"
+                                       @bind="dafaaDatePaiement" />
+                            </div>
+                        </div>
+                    }
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="ClosePrintModal">
+                        إلغاء
+                    </button>
+                    <button class="btn btn-primary"
+                            disabled="@(printLoading || HasDateError)"
+                            @onclick="ConfirmPrint">
+                        @if (printLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <span>جارٍ الإنشاء...</span>
+                        }
+                        else
+                        {
+                            <span>✅ تسجيل و طباعة</span>
+                        }
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Edit Modal ────────────────────────────────────────────────────────────── *@
+@if (showEditModal && editModel != null)
+{
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Edit Redevable</h5>
+                    <button class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label>BP</label>
+                            <input class="form-control" @bind="editModel.BP" />
+                        </div>
+                        <div class="col-md-4">
+                            <label>Article</label>
+                            <input class="form-control" @bind="editModel.Article" />
+                        </div>
+                        <div class="col-md-4">
+                            <label>NIF</label>
+                            <input class="form-control" @bind="editModel.NIF" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Full Name</label>
+                            <input class="form-control" @bind="editModel.FullName" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Adresse</label>
+                            <input class="form-control" @bind="editModel.Adresse" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Phone</label>
+                            <input class="form-control" @bind="editModel.Telephone" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Email</label>
+                            <input class="form-control" @bind="editModel.Email" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Activity</label>
+                            <input class="form-control" @bind="editModel.Activite" />
+                        </div>
+                        <div class="col-md-6">
+                            <label>Etablissement</label>
+                            <input class="form-control" @bind="editModel.Etablissement" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    <button class="btn btn-success" @onclick="UpdateRedevable">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Delete Modal ──────────────────────────────────────────────────────────── *@
+@if (showDeleteModal && toDelete != null)
+{
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button class="btn-close" @onclick="CancelDelete"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete:</p>
+                    <strong>@toDelete.FullName</strong>
+                    @if (!string.IsNullOrEmpty(deleteMessage))
+                    {
+                        <div class="alert alert-warning mt-3">@deleteMessage</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CancelDelete">Cancel</button>
+                    <button class="btn btn-danger" @onclick="Delete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+    // ── Data ───────────────────────────────────────────────────────────────────
+
+    List<RedevableInfo>? redevables;
+    List<RedevableInfo>? filtered;
+    HashSet<int> registeredIds = [];
+    string searchBp = "";
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+
+    async Task LoadData()
+    {
+        redevables = await RedevableService.GetAllAsync();
+        var declarations = await DeclarationService.GetAllAsync();
+        registeredIds = declarations.Select(d => d.RedevableInfoId).ToHashSet();
+        ApplyFilter();
+    }
+
+    void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchBp = e.Value?.ToString() ?? "";
+        ApplyFilter();
+    }
+
+    void ApplyFilter()
+    {
+        filtered = string.IsNullOrWhiteSpace(searchBp)
+            ? redevables
+            : redevables?.Where(r => r.BP.ToString().Contains(searchBp)).ToList();
+    }
+
+    // ── Expand ─────────────────────────────────────────────────────────────────
+
+    int? expandedId;
+    void ToggleExpand(int id) => expandedId = expandedId == id ? null : id;
+
+    // ── Print modal state ──────────────────────────────────────────────────────
+
+    bool showPrintModal = false;
+    bool printLoading = false;
+    bool printDafaaWahida = true;
+    RedevableInfo? printTarget;
+    string? printError;
+
+    decimal printMontantRestant = 0;
+    int nbrDofaa = 1;
+    List<VersementInput> versementRows = [];
+
+    static readonly DateTime Deadline = new(2026, 12, 31);
+
+    // Max installments = months between today+1 and 31/12/2026
+    int MaxDofaa => Math.Max(1,
+        ((Deadline.Year - DateTime.Today.Year) * 12)
+        + Deadline.Month - DateTime.Today.Month + 1);
+
+    decimal SingleInstallment =>
+        nbrDofaa > 0 ? Math.Round(printMontantRestant / nbrDofaa, 0) : 0;
+
+    bool HasDateError =>
+        !printDafaaWahida &&
+        versementRows.Any(v => v.DatePrevue > Deadline);
+
+    // ── Open / close ───────────────────────────────────────────────────────────
+
+    async Task OpenPrintModal(RedevableInfo r)
+    {
+        printTarget = r;
+        printDafaaWahida = true;
+        printError = null;
+        nbrDofaa = 1;
+        versementRows = [];
+        printMontantRestant = await DeclarationService.GetMontantRestantAsync(r.Id);
+        showPrintModal = true;
+
+        dafaaNumeroQuittance = string.Empty;
+        dafaaDatePaiement = DateTime.Today;
+    }
+
+    void ClosePrintModal()
+    {
+        showPrintModal = false;
+        printTarget = null;
+        printError = null;
+        versementRows = [];
+
+        dafaaNumeroQuittance = string.Empty;
+        dafaaDatePaiement = DateTime.Today;
+    }
+
+    void SetPayMode(bool dafaa)
+    {
+        printDafaaWahida = dafaa;
+        if (!dafaa) BuildRows();
+        else versementRows = [];
+    }
+
+    // ── Installment grid logic ─────────────────────────────────────────────────
+
+    void OnNbrDofaaChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var n) && n >= 1)
+        {
+            nbrDofaa = Math.Min(n, MaxDofaa);
+            BuildRows();
+        }
+    }
+
+    void BuildRows()
+    {
+        versementRows = [];
+        if (nbrDofaa <= 0) return;
+
+        var perInstallment = Math.Round(printMontantRestant / nbrDofaa, 0);
+
+        for (int i = 0; i < nbrDofaa; i++)
+        {
+            var date = DateTime.Today.AddMonths(i);  // ← was i + 1
+            var amount = (i == nbrDofaa - 1)
+                ? printMontantRestant - perInstallment * (nbrDofaa - 1)
+                : perInstallment;
+
+            versementRows.Add(new VersementInput
+            {
+                DatePrevue = date > Deadline ? Deadline : date,
+                Montant = amount,
+                NumeroQuittance = string.Empty
+            });
+        }
+    }
+
+    void OnDateChanged(int idx, ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+            versementRows[idx].DatePrevue = d;
+    }
+
+    void OnMontantChanged(int idx, ChangeEventArgs e)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out var v))
+            versementRows[idx].Montant = v;
+    }
+
+    // ── Confirm print ──────────────────────────────────────────────────────────
+
+    async Task ConfirmPrint()
+    {
+        if (printTarget is null) return;
+
+        printLoading = true;
+        printError = null;
+
+        try
+        {
+            var versements = printDafaaWahida ? null : versementRows;
+
+            var declaration = await DeclarationService.CreateAsync(
+                printTarget.Id,
+                dafaaWahida: printDafaaWahida,
+                alaAqsat: !printDafaaWahida,
+                versements: versements,
+                numeroQuittance: printDafaaWahida ? dafaaNumeroQuittance : null,
+                datePaiement: printDafaaWahida ? dafaaDatePaiement : null);
+
+            registeredIds.Add(printTarget.Id);
+
+            var bytes = await PdfService.FillFromDeclarationAsync(declaration);
+            var b64 = Convert.ToBase64String(bytes);
+
+            await JS.InvokeVoidAsync("downloadFileFromBase64", b64,
+                $"art122_n{declaration.Number}_{printTarget.FullName}.pdf",
+                "application/pdf");
+
+            showPrintModal = false;
+            printTarget = null;
+            versementRows = [];
+        }
+        catch (Exception ex)
+        {
+            printError = ex.Message;
+        }
+        finally
+        {
+            printLoading = false;
+        }
+    }
+
+    static string FmtDecimal(decimal v) =>
+        v == 0 ? "0" : string.Format("{0:N0}", v).Replace(",", "\u00A0") + ",00";
+
+    // ── Edit ───────────────────────────────────────────────────────────────────
+
+    RedevableInfo? editModel;
+    bool showEditModal;
+
+    void Edit(RedevableInfo r)
+    {
+        editModel = new RedevableInfo
+        {
+            Id = r.Id,
+            BP = r.BP,
+            Article = r.Article,
+            NIF = r.NIF,
+            FullName = r.FullName,
+            Adresse = r.Adresse,
+            Telephone = r.Telephone,
+            Email = r.Email,
+            Activite = r.Activite,
+            Etablissement = r.Etablissement
+        };
+        showEditModal = true;
+    }
+
+    async Task UpdateRedevable()
+    {
+        await RedevableService.UpdateAsync(editModel!);
+        showEditModal = false;
+        editModel = null;
+        await LoadData();
+    }
+
+    void CloseModal() { showEditModal = false; editModel = null; }
+
+    // ── Delete ─────────────────────────────────────────────────────────────────
+
+    RedevableInfo? toDelete;
+    bool showDeleteModal;
+    string? deleteMessage;
+
+    void ConfirmDelete(RedevableInfo r) { toDelete = r; showDeleteModal = true; deleteMessage = null; }
+    void CancelDelete() { showDeleteModal = false; toDelete = null; deleteMessage = null; }
+
+    async Task Delete()
+    {
+        var result = await RedevableService.DeleteAsync(toDelete!.Id);
+        deleteMessage = result.Message;
+        if (result.IsValid)
+        {
+            showDeleteModal = false;
+            toDelete = null;
+            await LoadData();
+        }
+    }
+
+    string dafaaNumeroQuittance = string.Empty;
+    DateTime dafaaDatePaiement = DateTime.Today;
+}
+
+<script>
+    window.downloadFileFromBase64 = (base64, filename, mimeType) => {
+        const a = document.createElement('a');
+        a.href = `data:${mimeType};base64,${base64}`;
+        a.download = filename;
+        a.click();
+    };
+</script>

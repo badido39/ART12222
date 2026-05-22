@@ -1,0 +1,315 @@
+﻿@page "/redevable-create"
+@using ART122.Data
+@using ART122.Services
+@using static ART122.Data.DTOs
+@inject IRedevableService RedevableService
+@inject INatureImpotService NatureService
+
+<h3 class="mb-4">Create Redevable + Impots</h3>
+
+<div class="container">
+
+    <!-- ===================== -->
+    <!-- REDEVABLE FORM -->
+    <!-- ===================== -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            Redevable Information
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label">BP</label>
+                    <input type="number" class="form-control"
+                           placeholder="Business Partner ID"
+                           @bind="model.BP" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Article</label>
+                    <input type="number" class="form-control"
+                           placeholder="Article number"
+                           @bind="model.Article" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">NIF</label>
+                    <input type="number" class="form-control"
+                           placeholder="Tax ID"
+                           @bind="model.NIF" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Full Name</label>
+                    <input class="form-control"
+                           placeholder="Enter full name"
+                           @bind="model.FullName" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Fils De</label>
+                    <input class="form-control"
+                           placeholder="Enter father's name"
+                           @bind="model.FilsDe" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Etablissement</label>
+                    <input class="form-control"
+                           placeholder="Establishment"
+                           @bind="model.Etablissement" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Adresse</label>
+                    <input class="form-control"
+                           placeholder="Enter address"
+                           @bind="model.Adresse" />
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Phone</label>
+                    <input class="form-control"
+                           placeholder="Phone number"
+                           @bind="model.Telephone" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input class="form-control"
+                           placeholder="email@example.com"
+                           @bind="model.Email" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Activity</label>
+                    <input class="form-control"
+                           placeholder="Business activity"
+                           @bind="model.Activite" />
+                </div>
+
+            </div>
+
+            <!-- SAVE REDEVABLE ONLY -->
+            <div class="text-end mt-3">
+                <button class="btn btn-primary"
+                        @onclick="SaveRedevable"
+                        disabled="@isRedevableSaved">
+                    @(isRedevableSaved ? "Redevable Saved" : "Save Redevable")
+                </button>
+            </div>
+
+        </div>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @errorMessage
+            </div>
+        }
+    </div>
+
+    <!-- ===================== -->
+    <!-- IMPOT FORM (LOCKED UNTIL REDEVABLE SAVED) -->
+    <!-- ===================== -->
+    @if (!isRedevableSaved)
+    {
+        <div class="alert alert-warning">
+            Please save Redevable first before adding Impots
+        </div>
+    }
+    else
+    {
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">
+                Add Impot
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label class="form-label">Nature Impot</label>
+                        <select class="form-select" @bind="newImpot.NatureImpotId">
+                            <option value="">-- Select Type --</option>
+                            @foreach (var n in natures)
+                            {
+                                <option value="@n.Id">@n.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Year</label>
+                        <input type="number" class="form-control"
+                               placeholder="2026"
+                               @bind="newImpot.YearImpot" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Role Number</label>
+                        <input class="form-control"
+                               placeholder="R-2026-001"
+                               @bind="newImpot.RoleNumber" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Droit</label>
+                        <input type="number" class="form-control"
+                               placeholder="Droit"
+                               @bind="newImpot.Droit" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">PA</label>
+                        <input type="number" class="form-control"
+                               placeholder="PA"
+                               @bind="newImpot.PA" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">PR</label>
+                        <input type="number" class="form-control"
+                               placeholder="PR"
+                               @bind="newImpot.PR" />
+                    </div>
+
+                    <div class="col-md-12">
+                        <button class="btn btn-success w-100"
+                                @onclick="AddImpot">
+                            Add Impot
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================== -->
+        <!-- CURRENT IMPOTS -->
+        <!-- ===================== -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white">
+                Current Impots
+            </div>
+
+            <div class="card-body">
+
+                @if (model.Impots.Count == 0)
+                {
+                    <p class="text-muted">No impots added yet.</p>
+                }
+                else
+                {
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Nature</th>
+                                <th>Year</th>
+                                <th>Role</th>
+                                <th>Droit</th>
+                                <th>PA</th>
+                                <th>PR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var i in model.Impots)
+                            {
+                                <tr>
+                                    <td>@i.NatureImpotId</td>
+                                    <td>@i.YearImpot</td>
+                                    <td>@i.RoleNumber</td>
+                                    <td>@i.Droit</td>
+                                    <td>@i.PA</td>
+                                    <td>@i.PR</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+
+            </div>
+        </div>
+
+        <!-- ===================== -->
+        <!-- SAVE ALL IMPOTS -->
+        <!-- ===================== -->
+        <div class="text-end">
+            <button class="btn btn-success btn-lg"
+                    @onclick="SaveAll">
+                Save All Impots
+            </button>
+        </div>
+    }
+
+</div>
+
+@code {
+
+    RedevableCreateDto model = new();
+    ImpotCreateDto newImpot = new();
+    List<NatureImpot> natures = new();
+    string? errorMessage;
+    bool isRedevableSaved = false;
+    int savedRedevableId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        natures = await NatureService.GetAllAsync();
+    }
+
+    // =====================
+    // SAVE REDEVABLE ONLY
+    // =====================
+    async Task SaveRedevable()
+    {
+        var check = await RedevableService.ValidateRedevable(
+            model.BP,
+            model.NIF,
+            model.Article
+        );
+
+        if (!check.IsValid)
+        {
+            errorMessage = check.Message;
+            return;
+        }
+
+        var result = await RedevableService.Create(model);
+
+        savedRedevableId = result.Id;
+        isRedevableSaved = true;
+        errorMessage = null;
+    }
+    // =====================
+    // ADD IMPOT (LOCAL)
+    // =====================
+    void AddImpot()
+    {
+        model.Impots.Add(new ImpotCreateDto
+        {
+            RoleNumber = newImpot.RoleNumber,
+            PA = newImpot.PA,
+            PR = newImpot.PR,
+            Droit = newImpot.Droit,
+            NatureImpotId = newImpot.NatureImpotId,
+            YearImpot = DateTime.Now.Year
+        });
+
+        newImpot = new ImpotCreateDto();
+    }
+
+    // =====================
+    // SAVE ALL IMPOTS
+    // =====================
+    async Task SaveAll()
+    {
+        await RedevableService.AddImpots(savedRedevableId, model.Impots);
+
+        model = new RedevableCreateDto();
+        newImpot = new ImpotCreateDto();
+
+        isRedevableSaved = false;
+    }
+}

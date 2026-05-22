@@ -1,0 +1,214 @@
+﻿@page "/annex5"
+@using ART122.Data
+@using ART122.Services
+@inject IDeclarationService DeclarationService
+@inject IJSRuntime JS
+
+<div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
+    <a href="/redevables" class="btn btn-outline-secondary btn-sm">← Retour</a>
+    <button class="btn btn-primary btn-sm" @onclick="ExportPdf" disabled="@exporting">
+        @if (exporting)
+        {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+            <span>جارٍ التصدير...</span>
+        }
+        else
+        {
+            <span>📄 تحميل PDF</span>
+        }
+    </button>
+</div>
+
+<div id="register-content" dir="rtl" style="background:white;padding:20px;font-family:'Arial',sans-serif;">
+
+    <div class="text-center mb-2">
+        <div style="font-weight:bold;font-size:1.05rem;">
+            الجمهورية الجزائرية الديمقراطية الشعبية
+        </div>
+        <div style="font-weight:bold;">وزارة المالية — المديرية العامة للضرائب</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:.85rem;">
+        <div>مديرية: الوادي</div>
+        <div>قباضة الضرائب لـ: المركز الجواري الدبيلة</div>
+    </div>
+
+    <div style="text-align:center;font-weight:bold;border:2px solid black;padding:8px;margin-bottom:16px;">
+        نموذج سجل معد لمتابعة التصريحات بالاكتتاب<br />
+        <span style="font-size:.85rem;">(المادة 122 من قانون المالية لسنة 2026)</span>
+    </div>
+
+    @if (declarations == null)
+    {
+        <div>جارٍ التحميل...</div>
+    }
+    else
+    {
+        <table style="width:100%;border-collapse:collapse;font-size:.75rem;text-align:center;">
+            <thead>
+                <tr style="background:#222;color:white;">
+                    <th style="@th;width:36px;">رقم<br />الترتيب</th>
+                    <th style="@th;">الاسم/اللقب أو التسمية الاجتماعية</th>
+                    <th style="@th;width:72px;">تاريخ التصريح</th>
+                    <th style="@th;width:90px;">المبلغ الكلي<br />للدين الجبائي</th>
+                    <th style="@th;width:90px;">الحقوق البسيطة<br />المستحقة (70%)</th>
+                    <th style="@th;width:80px;">غرامات<br />الوعاء</th>
+                    <th style="@th;width:80px;">غرامات<br />التحصيل</th>
+                    <th style="@th;width:80px;">مبلغ التخفيض<br />(30%)</th>
+                    <th style="@th;width:44px;">طريقة<br />التسوية</th>
+                    <th style="@th;">رقم وتاريخ<br />مقرر الإلغاء</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in declarations)
+                {
+                    var reduction = Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero);
+
+                    var rowBg = d.DGDecision switch
+                    {
+                        DGDecisionStatus.Acceptee => "background:#e8f5e9;",
+                        DGDecisionStatus.Refusee => "background:#fdecea;",
+                        _ => ""
+                    };
+
+                    <tr style="border-bottom:1px solid #ccc;@rowBg">
+                        <td style="@td;">@d.Number</td>
+                        <td style="@td;text-align:right;">
+                            @d.RedevableInfo.FullName
+                            @if (d.DGDecision == DGDecisionStatus.EnAttente)
+                            {
+                                <span style="font-size:.65rem;color:#999;margin-right:4px;">⏳</span>
+                            }
+                        </td>
+                        <td style="@td;">@d.Date.ToString("dd/MM/yyyy")</td>
+                        <td style="@td;">@Fmt(d.MontantTotal)</td>
+                        <td style="@td;">@Fmt(d.MontantRestant)</td>
+                        <td style="@td;">@Fmt(d.PA)</td>
+                        <td style="@td;">@Fmt(d.PR)</td>
+                        <td style="@td;">@Fmt(reduction)</td>
+                        <td style="@td;font-weight:bold;">@(d.DafaaWahida ? "ك" : "ق")</td>
+                        <td style="@td;font-size:.72rem;">
+                            @if (d.DGDecision == DGDecisionStatus.Acceptee)
+                            {
+                                <span style="color:green;font-weight:bold;">✅</span>
+                                <br />
+                                @d.DGDecisionReference
+                                <br />
+                                @d.DGDecisionDate?.ToString("dd/MM/yyyy")
+                            }
+                            else if (d.DGDecision == DGDecisionStatus.Refusee)
+                            {
+                                <span style="color:red;font-weight:bold;">❌ مرفوض</span>
+                                <br />
+                                @d.DGDecisionReference
+                            }
+                            else
+                            {
+                                <span style="color:#aaa;">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+
+                @if (declarations.Any())
+                {
+                    <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #333;">
+                        <td colspan="3" style="@td;text-align:right;">المجموع</td>
+                        <td style="@td;">@Fmt(declarations.Sum(d => d.MontantTotal))</td>
+                        <td style="@td;">@Fmt(declarations.Sum(d => d.MontantRestant))</td>
+                        <td style="@td;">@Fmt(declarations.Sum(d => d.PA))</td>
+                        <td style="@td;">@Fmt(declarations.Sum(d => d.PR))</td>
+                        <td style="@td;">
+                            @Fmt(declarations.Sum(d =>
+                            Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero)))
+                </td>
+                <td colspan="2" style="@td;"></td>
+            </tr>
+                        }
+            </tbody>
+        </table>
+
+        <div style="display:flex;justify-content:space-between;margin-top:30px;font-size:.82rem;">
+            <div>
+                حررت بـ: المركز الجواري الدبيلة &nbsp;&nbsp;
+                في: @DateTime.Today.ToString("dd/MM/yyyy")
+            </div>
+            <div style="text-align:center;">
+                قابض الضرائب:<br /><br /><br />
+                (الإمضاء والختم)
+            </div>
+        </div>
+
+        <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#666;">
+            الملحق 05
+        </div>
+    }
+</div>
+
+@* Load libraries from CDN *@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    window.exportRegisterPdf = async () => {
+        const el = document.getElementById('register-content');
+        if (!el) return;
+
+        const canvas = await html2canvas(el, {
+            scale: 2,          // 2× for sharp text
+            useCORS: true,
+            backgroundColor: '#ffffff'
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+
+        // A4 landscape: 297 × 210 mm  |  portrait: 210 × 297 mm
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+
+        // Scale image to fit page width
+        const imgW = canvas.width;
+        const imgH = canvas.height;
+        const ratio = pageW / imgW;
+        const scaledH = imgH * ratio;
+
+        // If content is taller than one page, add more pages
+        let yOffset = 0;
+        while (yOffset < scaledH) {
+            if (yOffset > 0) pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, -yOffset, pageW, scaledH);
+            yOffset += pageH;
+        }
+
+        const date = new Date().toISOString().slice(0, 10);
+        pdf.save(`register_art122_${date}.pdf`);
+    };
+</script>
+
+@code {
+    List<Declaration>? declarations;
+    bool exporting = false;
+
+    // Inline style helpers (avoids Blazor CSS isolation issues in print)
+    const string th = "border:1px solid #fff;padding:5px 4px;vertical-align:middle;";
+    const string td = "border:1px solid #ddd;padding:4px 5px;vertical-align:middle;";
+
+    protected override async Task OnInitializedAsync()
+    {
+        declarations = await DeclarationService.GetAllAsync();
+    }
+
+    async Task ExportPdf()
+    {
+        exporting = true;
+        StateHasChanged();
+        await Task.Delay(50); // let spinner render
+        await JS.InvokeVoidAsync("exportRegisterPdf");
+        exporting = false;
+    }
+
+    private static string Fmt(decimal v) =>
+        v == 0 ? "-" : string.Format("{0:N0}", v).Replace(",", "\u00A0") + ",00";
+}

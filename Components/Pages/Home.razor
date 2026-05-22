@@ -1,0 +1,401 @@
+﻿@page "/"
+@using ART122.Data
+@using ART122.Services
+@using static ART122.Data.DTOs
+@inject IRedevableService RedevableService
+@inject IDeclarationService DeclarationService
+
+@if (!loaded)
+{
+    <div class="text-center mt-5">
+        <div class="spinner-border text-primary"></div>
+    </div>
+}
+else
+{
+    <div dir="rtl" style="font-family:'Segoe UI',Tahoma,sans-serif;">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="mb-0 fw-bold">📊 لوحة المتابعة — المادة 122</h4>
+                <small class="text-muted">قانون المالية لسنة 2026 | المركز الجواري الدبيلة</small>
+            </div>
+            <span class="text-muted small">@DateTime.Today.ToString("dd/MM/yyyy")</span>
+        </div>
+
+        @* ══ ROW 1 : Core counters ════════════════════════════════════════════ *@
+        <div class="row g-3 mb-3">
+
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100"
+                     style="border-right:4px solid #0d6efd!important;">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">المكلفون</div>
+                        <div class="fw-bold fs-3 text-primary">@summaries.Count</div>
+                        <div class="text-muted" style="font-size:.75rem;">مكلف مسجل</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100"
+                     style="border-right:4px solid #198754!important;">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">التصريحات</div>
+                        <div class="fw-bold fs-3 text-success">@declarations.Count</div>
+                        <div class="text-muted" style="font-size:.75rem;">
+                            @declDafaa دفعة واحدة &nbsp;|&nbsp; @declAqsat على أقساط
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100"
+                     style="border-right:4px solid #fd7e14!important;">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">الأقساط</div>
+                        <div class="fw-bold fs-3 text-warning">@totalVersements</div>
+                        <div class="text-muted" style="font-size:.75rem;">
+                            <span class="text-success">@paidVersements ✅</span> &nbsp;|&nbsp;
+                            <span class="text-danger">@lateVersements ⚠️</span> &nbsp;|&nbsp;
+                            @pendingVersements ⏳
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100"
+                     style="border-right:4px solid #6f42c1!important;">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">دفعات الملحق 06</div>
+                        <div class="fw-bold fs-3" style="color:#6f42c1;">@annex6Batches</div>
+                        <div class="text-muted" style="font-size:.75rem;">
+                            @annex6Sent مُرسَل | @annex6Pending في الانتظار
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        @* ══ ROW 2 : Financial amounts ════════════════════════════════════════ *@
+        <div class="row g-3 mb-3">
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center h-100 bg-dark text-white">
+                    <div class="card-body">
+                        <div class="small mb-1 opacity-75">إجمالي الديون الجبائية</div>
+                        <div class="fw-bold fs-5">@Fmt(totalMontant)</div>
+                        <div class="opacity-50" style="font-size:.7rem;">دج</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center h-100"
+                     style="background:#e8f5e9;">
+                    <div class="card-body">
+                        <div class="small text-success mb-1 fw-semibold">الحقوق البسيطة (70%)</div>
+                        <div class="fw-bold fs-5 text-success">@Fmt(totalDroit70)</div>
+                        <div class="text-muted" style="font-size:.7rem;">الواجب التسديد</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center h-100"
+                     style="background:#fff3e0;">
+                    <div class="card-body">
+                        <div class="small mb-1 fw-semibold" style="color:#e65100;">
+                            غرامات الوعاء + التحصيل
+                        </div>
+                        <div class="fw-bold fs-5" style="color:#e65100;">
+                            @Fmt(totalPA + totalPR)
+                        </div>
+                        <div class="text-muted" style="font-size:.7rem;">
+                            وعاء: @Fmt(totalPA) | تحصيل: @Fmt(totalPR)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm text-center h-100"
+                     style="background:#f3e5f5;">
+                    <div class="card-body">
+                        <div class="small mb-1 fw-semibold" style="color:#6f42c1;">
+                            مبلغ التخفيض (30%)
+                        </div>
+                        <div class="fw-bold fs-5" style="color:#6f42c1;">@Fmt(totalReduction)</div>
+                        <div class="text-muted" style="font-size:.7rem;">ملغى لفائدة المكلفين</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        @* ══ ROW 3 : Payment progress bar ════════════════════════════════════ *@
+        @if (totalVersements > 0)
+        {
+            var paidPct = (int)Math.Round(paidVersements * 100.0 / totalVersements);
+            var latePct = (int)Math.Round(lateVersements * 100.0 / totalVersements);
+            var pendPct = Math.Max(0, 100 - paidPct - latePct);
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold small">تقدم تسديد الأقساط</span>
+                        <span class="small text-muted">@paidVersements / @totalVersements قسط مدفوع</span>
+                    </div>
+                    <div class="progress" style="height:18px;border-radius:9px;">
+                        <div class="progress-bar bg-success" style="width:@paidPct%">
+                            @if (paidPct > 8)
+                            {
+                                <span>@paidPct%</span>
+                            }
+                        </div>
+                        <div class="progress-bar bg-danger" style="width:@latePct%">
+                            @if (latePct > 8)
+                            {
+                                <span>@latePct%</span>
+                            }
+                        </div>
+                        <div class="progress-bar bg-secondary" style="width:@pendPct%">
+                            @if (pendPct > 8)
+                            {
+                                <span>@pendPct%</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 mt-2" style="font-size:.75rem;">
+                        <span><span class="badge bg-success">■</span> مدفوع</span>
+                        <span><span class="badge bg-danger">■</span> متأخر</span>
+                        <span><span class="badge bg-secondary">■</span> قيد الانتظار</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* ══ ROW 4 : Tables side by side ═════════════════════════════════════ *@
+        <div class="row g-3">
+
+            @* Left — Top taxpayers *@
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-dark text-white fw-semibold">
+                        🏆 أعلى المكلفين ديناً جبائياً
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-sm mb-0"
+                               style="font-size:.83rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>BP</th>
+                                    <th>الاسم</th>
+                                    <th class="text-end">الحقوق</th>
+                                    <th class="text-end">وعاء</th>
+                                    <th class="text-end">تحصيل</th>
+                                    <th class="text-center">تصريح</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    int rank = 1;
+                                }
+                                @foreach (var r in summaries.OrderByDescending(x => x.TotalDroit)
+                                                            .Take(10))
+                                {
+                                    var hasDecl = declarations.Any(d => d.RedevableInfoId == r.RedevableId);
+                                    <tr>
+                                        <td class="text-muted">@rank</td>
+                                        <td>@r.BP</td>
+                                        <td>
+                                            <a href="/redevable-details/@r.RedevableId"
+                                               class="text-decoration-none">
+                                                @r.FullName
+                                            </a>
+                                        </td>
+                                        <td class="text-end fw-semibold">@Fmt(r.TotalDroit)</td>
+                                        <td class="text-end text-warning">@Fmt(r.TotalPA)</td>
+                                        <td class="text-end text-danger">@Fmt(r.TotalPR)</td>
+                                        <td class="text-center">
+                                            @if (hasDecl)
+                                            {
+                                                <span class="badge bg-success">✅</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">—</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                    rank++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            @* Right — Overdue versements + undeclared *@
+            <div class="col-lg-5 d-flex flex-column gap-3">
+
+                @* Overdue versements *@
+                @if (overdueList.Any())
+                {
+                    <div class="card border-0 shadow-sm border-danger"
+                         style="border-right:4px solid #dc3545!important;">
+                        <div class="card-header bg-danger text-white fw-semibold">
+                            ⚠️ أقساط متأخرة (@overdueList.Count)
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0" style="font-size:.8rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>المكلف</th>
+                                        <th>الاستحقاق</th>
+                                        <th class="text-end">المبلغ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var v in overdueList.Take(6))
+                                    {
+                                        <tr class="table-danger">
+                                            <td>
+                                                <a href="/redevable-details/@v.declRedevableId"
+                                                   class="text-decoration-none text-danger fw-semibold">
+                                                    @v.name
+                                                </a>
+                                            </td>
+                                            <td>@v.date.ToString("dd/MM/yy")</td>
+                                            <td class="text-end fw-bold">@Fmt(v.montant)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                @* Redevables without declaration *@
+                @{
+                    var undeclared = summaries
+                    .Where(r => !declarations.Any(d => d.RedevableInfoId == r.RedevableId))
+                    .ToList();
+                }
+                @if (undeclared.Any())
+                {
+                    <div class="card border-0 shadow-sm"
+                         style="border-right:4px solid #ffc107!important;">
+                        <div class="card-header bg-warning text-dark fw-semibold">
+                            📋 لم يُصرَّح بعد (@undeclared.Count)
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0" style="font-size:.8rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>BP</th>
+                                        <th>الاسم</th>
+                                        <th class="text-end">الحقوق</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var r in undeclared.OrderByDescending(x => x.TotalDroit)
+                                                                .Take(6))
+                                    {
+                                        <tr>
+                                            <td>@r.BP</td>
+                                            <td>
+                                                <a href="/redevable-details/@r.RedevableId"
+                                                   class="text-decoration-none">
+                                                    @r.FullName
+                                                </a>
+                                            </td>
+                                            <td class="text-end">@Fmt(r.TotalDroit)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+            </div>
+        </div>
+
+    </div>
+}
+
+@code {
+    bool loaded = false;
+
+    List<RedevableTaxSummaryDto> summaries = new();
+    List<Declaration> declarations = new();
+
+    // Counters
+    int declDafaa, declAqsat;
+    int totalVersements, paidVersements, lateVersements, pendingVersements;
+    int annex6Batches, annex6Sent, annex6Pending;
+
+    // Amounts
+    decimal totalMontant, totalDroit70, totalPA, totalPR, totalReduction;
+
+    // Overdue list
+    record OverdueItem(string name, DateTime date, decimal montant, int declRedevableId);
+    List<OverdueItem> overdueList = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        summaries = await RedevableService.GetTaxSummaryAsync();
+        declarations = await DeclarationService.GetAllAsync();
+
+        // Declaration breakdown
+        declDafaa = declarations.Count(d => d.DafaaWahida);
+        declAqsat = declarations.Count(d => d.AlaAqsat);
+
+        // Versements
+        var allVersements = declarations.SelectMany(d => d.Versements).ToList();
+        totalVersements = allVersements.Count;
+        paidVersements = allVersements.Count(v => v.EstPaye);
+        lateVersements = allVersements.Count(v => !v.EstPaye && v.DatePrevue.Date < DateTime.Today);
+        pendingVersements = allVersements.Count(v => !v.EstPaye && v.DatePrevue.Date >= DateTime.Today);
+
+        // Annex 6
+        annex6Sent = declarations.Count(d => d.Annex6SentAt.HasValue);
+        annex6Pending = declarations.Count(d => !d.Annex6SentAt.HasValue);
+        annex6Batches = declarations
+            .Where(d => d.Annex6BatchNumber.HasValue)
+            .Select(d => d.Annex6BatchNumber)
+            .Distinct().Count();
+
+        // Financial
+        totalMontant = declarations.Sum(d => d.MontantTotal);
+        totalDroit70 = declarations.Sum(d => d.MontantRestant);
+        totalPA = declarations.Sum(d => d.PA);
+        totalPR = declarations.Sum(d => d.PR);
+        totalReduction = declarations.Sum(d =>
+            Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero));
+
+        // Overdue versements with redevable name
+        overdueList = declarations
+            .SelectMany(d => d.Versements
+                .Where(v => !v.EstPaye && v.DatePrevue.Date < DateTime.Today)
+                .Select(v => new OverdueItem(
+                    d.RedevableInfo.FullName,
+                    v.DatePrevue,
+                    v.Montant,
+                    d.RedevableInfoId)))
+            .OrderBy(x => x.date)
+            .ToList();
+
+        loaded = true;
+    }
+
+    static string Fmt(decimal v) =>
+        v == 0 ? "—" :
+        string.Format("{0:N0}", Math.Round(v, 0, MidpointRounding.AwayFromZero))
+              .Replace(",", "\u00A0") + ",00";
+}

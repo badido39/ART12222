@@ -1,0 +1,419 @@
+﻿@page "/annex6"
+@using ART122.Data
+@using ART122.Services
+@inject IDeclarationService DeclarationService
+@inject IJSRuntime JS
+
+<div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
+    <a href="/redevables" class="btn btn-outline-secondary btn-sm">← Retour</a>
+    <div class="d-flex gap-2">
+        @if (pending?.Any() == true)
+        {
+            <button class="btn btn-success btn-sm" @onclick="ConfirmSend"
+                    disabled="@sending">
+                @if (sending)
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                ✅ تسجيل الإرسال إلى المديرية
+            </button>
+            <button class="btn btn-primary btn-sm" @onclick="ExportPdf"
+                    disabled="@exporting">
+                @if (exporting)
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                📄 طباعة الملحق 06
+            </button>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(successMsg))
+{
+    <div class="alert alert-success alert-dismissible d-print-none">
+        @successMsg
+        <button type="button" class="btn-close" @onclick="() => successMsg = string.Empty"></button>
+    </div>
+}
+
+@* ══ PRINTABLE CONTENT ══════════════════════════════════════════════════ *@
+<div id="annex6-content" dir="rtl"
+     style="background:white;padding:20px;font-family:'Arial',sans-serif;">
+
+    <div class="text-center mb-2">
+        <div style="font-weight:bold;font-size:1.05rem;">
+            الجمهورية الجزائرية الديمقراطية الشعبية
+        </div>
+        <div style="font-weight:bold;">وزارة المالية — المديرية العامة للضرائب</div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:.85rem;">
+        <div>مديرية: الوادي</div>
+        <div>قباضة الضرائب لـ: المركز الجواري الدبيلة</div>
+    </div>
+
+    <div style="text-align:center;font-weight:bold;border:2px solid black;
+                padding:8px;margin-bottom:16px;">
+        الجدول الإسمي الجماعي للتصريحات بالاكتتاب<br />
+        في إجراء تطهير الديون الجبائية<br />
+        <span style="font-size:.85rem;">(المادة 122 من قانون المالية لسنة 2026)</span>
+    </div>
+
+    @if (pending == null)
+    {
+        <div>جارٍ التحميل...</div>
+    }
+    else if (!pending.Any())
+    {
+        <div class="alert alert-info d-print-none">
+            ✅ لا توجد تصريحات جديدة في انتظار الإرسال. جميع التصريحات تم تسجيلها مسبقاً.
+        </div>
+    }
+    else
+    {
+        <table style="width:100%;border-collapse:collapse;font-size:.75rem;text-align:center;">
+            <thead>
+                <tr style="background:#222;color:white;">
+                    <th style="@th;width:36px;">رقم<br />الترتيب (*)</th>
+                    <th style="@th;">الاسم / اللقب أو التسمية الاجتماعية</th>
+                    <th style="@th;width:90px;">المبلغ الكلي<br />للدين الجبائي</th>
+                    <th style="@th;width:90px;">الحقوق البسيطة<br />المستحقة (70%)</th>
+                    <th style="@th;width:80px;">غرامات<br />الوعاء</th>
+                    <th style="@th;width:80px;">غرامات<br />التحصيل</th>
+                    <th style="@th;width:80px;">مبلغ<br />التخفيض (30%)</th>
+                    <th style="@th;width:44px;">طريقة<br />تسوية الدين (**)</th>
+                    <th style="@th;">ملاحظات</th>
+                    <th style="@th;">رقم وتاريخ<br />مقرر الإلغاء</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in pending)
+                {
+                    var reduction = Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero);
+                    <tr style="border-bottom:1px solid #ccc;">
+                        <td style="@td;">@d.Number</td>
+                        <td style="@td;text-align:right;">@d.RedevableInfo.FullName</td>
+                        <td style="@td;">@Fmt(d.MontantTotal)</td>
+                        <td style="@td;">@Fmt(d.MontantRestant)</td>
+                        <td style="@td;">@Fmt(d.PA)</td>
+                        <td style="@td;">@Fmt(d.PR)</td>
+                        <td style="@td;">@Fmt(reduction)</td>
+                        <td style="@td;font-weight:bold;">@(d.DafaaWahida ? "ك" : "ق")</td>
+                        <td style="@td;"></td>
+                        <td style="@td;"></td>
+                    </tr>
+                }
+
+                <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #333;">
+                    <td colspan="2" style="@td;text-align:right;">المجموع</td>
+                    <td style="@td;">@Fmt(pending.Sum(d => d.MontantTotal))</td>
+                    <td style="@td;">@Fmt(pending.Sum(d => d.MontantRestant))</td>
+                    <td style="@td;">@Fmt(pending.Sum(d => d.PA))</td>
+                    <td style="@td;">@Fmt(pending.Sum(d => d.PR))</td>
+                    <td style="@td;">
+                        @Fmt(pending.Sum(d =>
+                        Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero)))
+                </td>
+                <td colspan="3" style="@td;"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="font-size:.72rem;margin-top:8px;">
+        (*) رقم الترتيب الواجب تسجيله في التصريح بالاكتتاب<br />
+        (**) طريقة تسوية الدين: كليا (ك) أو على أقساط (ق)
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:30px;font-size:.82rem;">
+        <div>
+            حررت بـ: المركز الجواري الدبيلة &nbsp;&nbsp;
+            في: @DateTime.Today.ToString("dd/MM/yyyy")
+        </div>
+        <div style="text-align:center;">
+            قابض الضرائب:<br /><br /><br />
+            (الإمضاء والختم)
+        </div>
+    </div>
+
+    <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#666;">
+        الملحق 06
+    </div>
+        }
+</div>
+
+@* ══ SENT HISTORY (screen only) ═════════════════════════════════════════ *@
+@if (sentGroups?.Any() == true)
+{
+    <div class="mt-4 d-print-none">
+        <h6 class="text-muted">📂 الدفعات المُرسَلة مسبقاً</h6>
+
+        @{
+            int batchIndex = 0;
+        }
+        @foreach (var grp in sentGroups)
+        {
+            var batchId = $"annex6-history-{batchIndex}";
+            var batchDate = grp.Key;
+            var batchList = grp.OrderBy(d => d.Number).ToList();
+            var filename = $"annex6_art122_dafaa_{grp.Key}.pdf";
+            var capturedId = batchId; // capture for lambda
+
+            <div class="card mb-2 shadow-sm">
+                <div class="card-header bg-secondary text-white d-flex
+                                    justify-content-between align-items-center py-1">
+                    <span>
+                        📤 إرسال رقم: <strong>@grp.Key</strong>
+                        — بتاريخ: @grp.First().Annex6SentAt!.Value.ToString("dd/MM/yyyy")
+                        
+                    </span>
+                    <button class="btn btn-sm btn-light"
+                            @onclick="() => ExportHistoryPdf(capturedId, filename)">
+                        🖨️ إعادة طباعة
+                    </button>
+                </div>
+
+                @* ── Visible summary table ── *@
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover mb-0" style="font-size:.82rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>الاسم</th>
+                                <th class="text-end">المجموع</th>
+                                <th class="text-end">الحقوق (70%)</th>
+                                <th>الكيفية</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var d in batchList)
+                            {
+                                <tr>
+                                    <td>@d.Number</td>
+                                    <td>@d.RedevableInfo.FullName</td>
+                                    <td class="text-end">@Fmt(d.MontantTotal)</td>
+                                    <td class="text-end">@Fmt(d.MontantRestant)</td>
+                                    <td>
+                                        @if (d.DafaaWahida)
+                                        {
+                                            <span class="badge bg-success">دفعة واحدة</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">أقساط</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            @* ── Hidden printable version for this batch ── *@
+            <div id="@batchId" dir="rtl"
+                 style="position:absolute;left:-9999px;top:0;
+                                background:white;padding:20px;width:1100px;
+                                font-family:'Arial',sans-serif;">
+
+                <div style="text-align:center;margin-bottom:8px;">
+                    <div style="font-weight:bold;font-size:1.05rem;">
+                        الجمهورية الجزائرية الديمقراطية الشعبية
+                    </div>
+                    <div style="font-weight:bold;">وزارة المالية — المديرية العامة للضرائب</div>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;
+                                    margin-bottom:6px;font-size:.85rem;">
+                    <div>مديرية: الوادي</div>
+                    <div>قباضة الضرائب لـ: المركز الجواري الدبيلة</div>
+                </div>
+
+                <div style="text-align:center;font-weight:bold;border:2px solid black;
+                                    padding:8px;margin-bottom:16px;">
+                    الجدول الإسمي الجماعي للتصريحات بالاكتتاب<br />
+                    في إجراء تطهير الديون الجبائية<br />
+                    <span style="font-size:.85rem;">
+                        (المادة 122 من قانون المالية لسنة 2026)
+                    </span>
+                </div>
+
+                <table style="width:100%;border-collapse:collapse;
+                                      font-size:.75rem;text-align:center;">
+                    <thead>
+                        <tr style="background:#222;color:white;">
+                            <th style="@th;width:36px;">رقم<br />الترتيب (*)</th>
+                            <th style="@th;">الاسم / اللقب أو التسمية الاجتماعية</th>
+                            <th style="@th;width:90px;">المبلغ الكلي<br />للدين الجبائي</th>
+                            <th style="@th;width:90px;">الحقوق البسيطة<br />المستحقة (70%)</th>
+                            <th style="@th;width:80px;">غرامات<br />الوعاء</th>
+                            <th style="@th;width:80px;">غرامات<br />التحصيل</th>
+                            <th style="@th;width:80px;">مبلغ<br />التخفيض (30%)</th>
+                            <th style="@th;width:44px;">طريقة<br />تسوية الدين (**)</th>
+                            <th style="@th;">ملاحظات</th>
+                            <th style="@th;">رقم وتاريخ<br />مقرر الإلغاء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in batchList)
+                        {
+                            var reduction = Math.Round(d.Droit * 0.30m, 0,
+                            MidpointRounding.AwayFromZero);
+                            <tr style="border-bottom:1px solid #ccc;">
+                                <td style="@td;">@d.Number</td>
+                                <td style="@td;text-align:right;">
+                                    @d.RedevableInfo.FullName
+                                </td>
+                                <td style="@td;">@Fmt(d.MontantTotal)</td>
+                                <td style="@td;">@Fmt(d.MontantRestant)</td>
+                                <td style="@td;">@Fmt(d.PA)</td>
+                                <td style="@td;">@Fmt(d.PR)</td>
+                                <td style="@td;">@Fmt(reduction)</td>
+                                <td style="@td;font-weight:bold;">
+                                    @(d.DafaaWahida ? "ك" : "ق")
+                                </td>
+                                <td style="@td;"></td>
+                                <td style="@td;"></td>
+                            </tr>
+                        }
+                        <tr style="background:#f0f0f0;font-weight:bold;
+                                           border-top:2px solid #333;">
+                            <td colspan="2" style="@td;text-align:right;">المجموع</td>
+                            <td style="@td;">@Fmt(batchList.Sum(d => d.MontantTotal))</td>
+                            <td style="@td;">@Fmt(batchList.Sum(d => d.MontantRestant))</td>
+                            <td style="@td;">@Fmt(batchList.Sum(d => d.PA))</td>
+                            <td style="@td;">@Fmt(batchList.Sum(d => d.PR))</td>
+                            <td style="@td;">
+                                @Fmt(batchList.Sum(d =>
+                                Math.Round(d.Droit * 0.30m, 0,
+                                MidpointRounding.AwayFromZero)))
+                    </td>
+                    <td colspan="3" style="@td;"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="font-size:.72rem;margin-top:8px;">
+            (*) رقم الترتيب الواجب تسجيله في التصريح بالاكتتاب<br />
+            (**) طريقة تسوية الدين: كليا (ك) أو على أقساط (ق)
+        </div>
+
+        <div style="display:flex;justify-content:space-between;
+                            margin-top:30px;font-size:.82rem;">
+            <div>
+                حررت بـ: المركز الجواري الدبيلة &nbsp;&nbsp;
+                في: @batchDate.ToString("dd/MM/yyyy")
+            </div>
+            <div style="text-align:center;">
+                قابض الضرائب:<br /><br /><br />
+                (الإمضاء والختم)
+            </div>
+        </div>
+
+        <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#666;">
+            الملحق 06
+        </div>
+    </div>
+
+        batchIndex++;
+        }
+    </div>
+}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+       window.exportAnnex6Pdf = async (elementId, filename) => {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const ratio = pageW / canvas.width;
+        const scaledH = canvas.height * ratio;
+
+        let yOffset = 0;
+        while (yOffset < scaledH) {
+            if (yOffset > 0) pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, -yOffset, pageW, scaledH);
+            yOffset += pageH;
+        }
+
+        pdf.save(filename);
+    };
+</script>
+
+@code {
+    List<Declaration>? pending;
+    IEnumerable<IGrouping<int, Declaration>>? sentGroups;
+
+    bool exporting = false;
+    bool sending = false;
+    string successMsg = string.Empty;
+
+    const string th = "border:1px solid #fff;padding:5px 4px;vertical-align:middle;";
+    const string td = "border:1px solid #ddd;padding:4px 5px;vertical-align:middle;";
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    async Task Load()
+    {
+        var all = await DeclarationService.GetAllAsync();
+
+        pending = await DeclarationService.GetPendingAnnex6Async();
+
+        // Group already-sent by the rounded minute so simultaneous sends cluster
+        sentGroups = all
+     .Where(d => d.Annex6BatchNumber.HasValue)
+     .GroupBy(d => d.Annex6BatchNumber!.Value)
+     .OrderByDescending(g => g.Key);
+    }
+
+    async Task ConfirmSend()
+    {
+        if (pending is null || !pending.Any()) return;
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm",
+            $"سيتم تسجيل إرسال {pending.Count} تصريح إلى المديرية.\nهل تؤكد؟");
+
+        if (!confirmed) return;
+
+        sending = true;
+        StateHasChanged();
+
+        await DeclarationService.MarkAsSentToAnnex6Async(pending.Select(d => d.Id).ToList());
+
+        successMsg = $"✅ تم تسجيل إرسال {pending.Count} تصريح بتاريخ {DateTime.Now:dd/MM/yyyy HH:mm}.";
+        sending = false;
+        await Load();
+    }
+
+    async Task ExportPdf()
+    {
+        exporting = true;
+        StateHasChanged();
+        await Task.Delay(50);
+        await JS.InvokeVoidAsync("exportAnnex6Pdf",
+            "annex6-content",
+            $"annex6_art122_{DateTime.Today:yyyy-MM-dd}.pdf");
+        exporting = false;
+    }
+
+    static DateTime RoundToMinute(DateTime dt) =>
+        new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0);
+
+    static string Fmt(decimal v) =>
+        v == 0 ? "-" : string.Format("{0:N0}", v).Replace(",", "\u00A0") + ",00";
+
+
+    async Task ExportHistoryPdf(string elementId, string filename)
+    {
+        await JS.InvokeVoidAsync("exportAnnex6Pdf", elementId, filename);
+    }
+}
