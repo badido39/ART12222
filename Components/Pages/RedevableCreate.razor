@@ -5,134 +5,134 @@
 @inject IRedevableService RedevableService
 @inject INatureImpotService NatureService
 
-<h3 class="mb-4">Create Redevable + Impots</h3>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold">➕ تسجيل مكلف جديد</h4>
+    <a href="/redevables" class="btn btn-outline-secondary btn-sm">← العودة للقائمة</a>
+</div>
 
-<div class="container">
+<div class="container-fluid px-0">
 
-    <!-- ===================== -->
-    <!-- REDEVABLE FORM -->
-    <!-- ===================== -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-primary text-white">
-            Redevable Information
+    @* ══ REDEVABLE FORM ══════════════════════════════════════════════════════ *@
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header text-white fw-semibold"
+             style="background:linear-gradient(135deg,#1a1a2e,#2c2c54);">
+            👤 بيانات المكلف
         </div>
-
         <div class="card-body">
             <div class="row g-3">
 
                 <div class="col-md-4">
-                    <label class="form-label">BP</label>
+                    <label class="form-label fw-semibold">رقم BP</label>
                     <input type="number" class="form-control"
-                           placeholder="Business Partner ID"
+                           placeholder="رقم الشريك التجاري"
                            @bind="model.BP" />
                 </div>
-
                 <div class="col-md-4">
-                    <label class="form-label">Article</label>
+                    <label class="form-label fw-semibold">رقم المادة</label>
                     <input type="number" class="form-control"
-                           placeholder="Article number"
+                           placeholder="رقم المادة"
                            @bind="model.Article" />
                 </div>
-
                 <div class="col-md-4">
-                    <label class="form-label">NIF</label>
+                    <label class="form-label fw-semibold">NIF</label>
                     <input type="number" class="form-control"
-                           placeholder="Tax ID"
+                           placeholder="رقم التعريف الجبائي"
                            @bind="model.NIF" />
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Full Name</label>
+                    <label class="form-label fw-semibold">الاسم الكامل</label>
                     <input class="form-control"
-                           placeholder="Enter full name"
+                           placeholder="الاسم واللقب"
                            @bind="model.FullName" />
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Fils De</label>
+                    <label class="form-label fw-semibold">ابن / بنت</label>
                     <input class="form-control"
-                           placeholder="Enter father's name"
+                           placeholder="اسم الأب"
                            @bind="model.FilsDe" />
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Etablissement</label>
-                    <input class="form-control"
-                           placeholder="Establishment"
-                           @bind="model.Etablissement" />
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Adresse</label>
+                    <label class="form-label fw-semibold">المؤسسة</label>
                     <input class="form-control"
-                           placeholder="Enter address"
+                           placeholder="اسم المؤسسة"
+                           @bind="model.Etablissement" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">العنوان</label>
+                    <input class="form-control"
+                           placeholder="العنوان الكامل"
                            @bind="model.Adresse" />
                 </div>
 
                 <div class="col-md-4">
-                    <label class="form-label">Phone</label>
+                    <label class="form-label fw-semibold">الهاتف</label>
                     <input class="form-control"
-                           placeholder="Phone number"
+                           placeholder="رقم الهاتف"
                            @bind="model.Telephone" />
                 </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">Email</label>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">البريد الإلكتروني</label>
                     <input class="form-control"
-                           placeholder="email@example.com"
+                           placeholder="example@mail.com"
                            @bind="model.Email" />
                 </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">Activity</label>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">النشاط</label>
                     <input class="form-control"
-                           placeholder="Business activity"
+                           placeholder="طبيعة النشاط"
                            @bind="model.Activite" />
                 </div>
 
             </div>
 
-            <!-- SAVE REDEVABLE ONLY -->
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger mt-3 py-2">
+                    ⚠️ @errorMessage
+                </div>
+            }
+
             <div class="text-end mt-3">
-                <button class="btn btn-primary"
+                <button class="btn btn-primary px-4"
                         @onclick="SaveRedevable"
                         disabled="@isRedevableSaved">
-                    @(isRedevableSaved ? "Redevable Saved" : "Save Redevable")
+                    @if (isRedevableSaved)
+                    {
+                        <span>✅ تم حفظ المكلف</span>
+                    }
+                    else
+                    {
+                        <span>💾 حفظ المكلف</span>
+                    }
                 </button>
             </div>
-
         </div>
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert alert-danger mt-3">
-                @errorMessage
-            </div>
-        }
     </div>
 
-    <!-- ===================== -->
-    <!-- IMPOT FORM (LOCKED UNTIL REDEVABLE SAVED) -->
-    <!-- ===================== -->
+    @* ══ IMPOT FORM ══════════════════════════════════════════════════════════ *@
     @if (!isRedevableSaved)
     {
-        <div class="alert alert-warning">
-            Please save Redevable first before adding Impots
+        <div class="alert alert-warning d-flex align-items-center gap-2">
+            <span style="font-size:1.3rem;">⚠️</span>
+            <span>يرجى حفظ بيانات المكلف أولاً قبل إضافة الضرائب.</span>
         </div>
     }
     else
     {
-
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-dark text-white">
-                Add Impot
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header text-white fw-semibold"
+                 style="background:linear-gradient(135deg,#162b52,#2c5282);">
+                ➕ إضافة ضريبة
             </div>
-
             <div class="card-body">
-
                 <div class="row g-3">
 
                     <div class="col-md-6">
-                        <label class="form-label">Nature Impot</label>
+                        <label class="form-label fw-semibold">طبيعة الضريبة</label>
                         <select class="form-select" @bind="newImpot.NatureImpotId">
-                            <option value="">-- Select Type --</option>
+                            <option value="">-- اختر النوع --</option>
                             @foreach (var n in natures)
                             {
                                 <option value="@n.Id">@n.Name</option>
@@ -140,45 +140,44 @@
                         </select>
                     </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label">Year</label>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">السنة</label>
                         <input type="number" class="form-control"
-                               placeholder="2026"
+                               placeholder="مثال: 2024"
+                               min="1962" max="2100"
                                @bind="newImpot.YearImpot" />
                     </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label">Role Number</label>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">رقم الجدول</label>
                         <input class="form-control"
-                               placeholder="R-2026-001"
+                               placeholder="R-2024-001"
                                @bind="newImpot.RoleNumber" />
                     </div>
 
                     <div class="col-md-4">
-                        <label class="form-label">Droit</label>
+                        <label class="form-label fw-semibold">الحقوق البسيطة (دج)</label>
                         <input type="number" class="form-control"
-                               placeholder="Droit"
+                               placeholder="0"
                                @bind="newImpot.Droit" />
                     </div>
-
                     <div class="col-md-4">
-                        <label class="form-label">PA</label>
+                        <label class="form-label fw-semibold">غرامات الوعاء (PA)</label>
                         <input type="number" class="form-control"
-                               placeholder="PA"
+                               placeholder="0"
                                @bind="newImpot.PA" />
                     </div>
-
                     <div class="col-md-4">
-                        <label class="form-label">PR</label>
+                        <label class="form-label fw-semibold">غرامات التحصيل (PR)</label>
                         <input type="number" class="form-control"
-                               placeholder="PR"
+                               placeholder="0"
                                @bind="newImpot.PR" />
                     </div>
 
-                    <div class="col-md-12">
-                        <button class="btn btn-success w-100"
+                    <div class="col-12">
+                        <button class="btn btn-success w-100 py-2 fw-semibold"
                                 @onclick="AddImpot">
-                            Add Impot
+                            ➕ إضافة الضريبة للقائمة
                         </button>
                     </div>
 
@@ -186,59 +185,75 @@
             </div>
         </div>
 
-        <!-- ===================== -->
-        <!-- CURRENT IMPOTS -->
-        <!-- ===================== -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-secondary text-white">
-                Current Impots
+        @* ══ CURRENT IMPOTS TABLE ════════════════════════════════════════════ *@
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-secondary text-white fw-semibold">
+                📊 الضرائب المضافة
             </div>
-
-            <div class="card-body">
-
+            <div class="card-body p-0">
                 @if (model.Impots.Count == 0)
                 {
-                    <p class="text-muted">No impots added yet.</p>
+                    <div class="text-center text-muted py-4">
+                        لم يتم إضافة أي ضريبة بعد.
+                    </div>
                 }
                 else
                 {
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Nature</th>
-                                <th>Year</th>
-                                <th>Role</th>
-                                <th>Droit</th>
-                                <th>PA</th>
-                                <th>PR</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var i in model.Impots)
-                            {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 text-center align-middle">
+                            <thead class="table-light">
                                 <tr>
-                                    <td>@i.NatureImpotId</td>
-                                    <td>@i.YearImpot</td>
-                                    <td>@i.RoleNumber</td>
-                                    <td>@i.Droit</td>
-                                    <td>@i.PA</td>
-                                    <td>@i.PR</td>
+                                    <th>طبيعة الضريبة</th>
+                                    <th>السنة</th>
+                                    <th>رقم الجدول</th>
+                                    <th>الحقوق</th>
+                                    <th>غ. الوعاء</th>
+                                    <th>غ. التحصيل</th>
+                                    <th>المجموع</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var i in model.Impots)
+                                {
+                                    <tr>
+                                        <td>@(natures.FirstOrDefault(n => n.Id == i.NatureImpotId)?.Name ?? "-")</td>
+                                        <td>@i.YearImpot</td>
+                                        <td>@i.RoleNumber</td>
+                                        <td class="fw-bold">@i.Droit.ToString("N0")</td>
+                                        <td class="text-warning fw-semibold">@i.PA.ToString("N0")</td>
+                                        <td class="text-danger fw-semibold">@i.PR.ToString("N0")</td>
+                                        <td class="text-primary fw-bold">
+                                            @((i.Droit + i.PA + i.PR).ToString("N0"))
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-secondary fw-bold">
+                                <tr>
+                                    <td colspan="3" class="text-end">المجموع الإجمالي</td>
+                                    <td>@model.Impots.Sum(i => i.Droit).ToString("N0")</td>
+                                    <td class="text-warning">@model.Impots.Sum(i => i.PA).ToString("N0")</td>
+                                    <td class="text-danger">@model.Impots.Sum(i => i.PR).ToString("N0")</td>
+                                    <td class="text-primary">
+                                        @model.Impots.Sum(i => i.Droit + i.PA + i.PR).ToString("N0")
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 }
-
             </div>
         </div>
 
-        <!-- ===================== -->
-        <!-- SAVE ALL IMPOTS -->
-        <!-- ===================== -->
-        <div class="text-end">
-            <button class="btn btn-success btn-lg"
+        @* ══ SAVE ALL ════════════════════════════════════════════════════════ *@
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted small">
+                @model.Impots.Count ضريبة مضافة
+            </span>
+            <button class="btn btn-success btn-lg px-5 fw-semibold"
+                    disabled="@(model.Impots.Count == 0)"
                     @onclick="SaveAll">
-                Save All Impots
+                ✅ حفظ جميع الضرائب
             </button>
         </div>
     }
@@ -253,40 +268,42 @@
     string? errorMessage;
     bool isRedevableSaved = false;
     int savedRedevableId;
+    string persistedRoleNumber = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         natures = await NatureService.GetAllAsync();
     }
 
-    // =====================
-    // SAVE REDEVABLE ONLY
-    // =====================
+    // ── Save redevable ─────────────────────────────────────────────────────────
     async Task SaveRedevable()
     {
         var check = await RedevableService.ValidateRedevable(
-            model.BP,
-            model.NIF,
-            model.Article
-        );
+            model.BP, model.NIF, model.Article);
 
-        if (!check.IsValid)
-        {
-            errorMessage = check.Message;
-            return;
-        }
+        if (!check.IsValid) { errorMessage = check.Message; return; }
 
         var result = await RedevableService.Create(model);
-
         savedRedevableId = result.Id;
         isRedevableSaved = true;
         errorMessage = null;
+
+        newImpot = new ImpotCreateDto { RoleNumber = persistedRoleNumber };
     }
-    // =====================
-    // ADD IMPOT (LOCAL)
-    // =====================
+
+    // ── Add impot locally ──────────────────────────────────────────────────────
     void AddImpot()
     {
+        var currentYear = DateTime.Now.Year;
+
+        if (newImpot.YearImpot < 1962 || newImpot.YearImpot > currentYear - 1)
+        {
+            errorMessage = $"السنة ({newImpot.YearImpot}) غير صحيحة. أدخل سنة بين 1962 و {currentYear - 1}.";
+            return;
+        }
+
+        errorMessage = null;
+
         model.Impots.Add(new ImpotCreateDto
         {
             RoleNumber = newImpot.RoleNumber,
@@ -294,22 +311,22 @@
             PR = newImpot.PR,
             Droit = newImpot.Droit,
             NatureImpotId = newImpot.NatureImpotId,
-            YearImpot = DateTime.Now.Year
+            YearImpot = newImpot.YearImpot
         });
 
-        newImpot = new ImpotCreateDto();
+        persistedRoleNumber = newImpot.RoleNumber;
+        newImpot = new ImpotCreateDto { RoleNumber = persistedRoleNumber };
     }
 
-    // =====================
-    // SAVE ALL IMPOTS
-    // =====================
+    // ── Save all impots ────────────────────────────────────────────────────────
     async Task SaveAll()
     {
         await RedevableService.AddImpots(savedRedevableId, model.Impots);
 
-        model = new RedevableCreateDto();
-        newImpot = new ImpotCreateDto();
+        persistedRoleNumber = model.Impots.LastOrDefault()?.RoleNumber ?? persistedRoleNumber;
 
+        model = new RedevableCreateDto();
+        newImpot = new ImpotCreateDto { RoleNumber = persistedRoleNumber };
         isRedevableSaved = false;
     }
 }

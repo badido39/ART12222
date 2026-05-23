@@ -17,6 +17,14 @@
                 }
                 ✅ تسجيل الإرسال إلى المديرية
             </button>
+            <button class="btn btn-success btn-sm" @onclick="ExportExcel"
+                    disabled="@exportingExcel">
+                @if (exportingExcel)
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                📊 تصدير Excel
+            </button>
             <button class="btn btn-primary btn-sm" @onclick="ExportPdf"
                     disabled="@exporting">
                 @if (exporting)
@@ -104,7 +112,6 @@
                         <td style="@td;"></td>
                     </tr>
                 }
-
                 <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #333;">
                     <td colspan="2" style="@td;text-align:right;">المجموع</td>
                     <td style="@td;">@Fmt(pending.Sum(d => d.MontantTotal))</td>
@@ -156,8 +163,11 @@
             var batchId = $"annex6-history-{batchIndex}";
             var batchDate = grp.Key;
             var batchList = grp.OrderBy(d => d.Number).ToList();
-            var filename = $"annex6_art122_dafaa_{grp.Key}.pdf";
-            var capturedId = batchId; // capture for lambda
+            var filename = $"annex6_art122_dafaa_{grp.Key}";
+            var capturedId = batchId;
+            var capturedBatch = batchList;
+            var capturedName = filename;
+            var capturedPdfName = filename + ".pdf";
 
             <div class="card mb-2 shadow-sm">
                 <div class="card-header bg-secondary text-white d-flex
@@ -165,12 +175,17 @@
                     <span>
                         📤 إرسال رقم: <strong>@grp.Key</strong>
                         — بتاريخ: @grp.First().Annex6SentAt!.Value.ToString("dd/MM/yyyy")
-                        
                     </span>
-                    <button class="btn btn-sm btn-light"
-                            @onclick="() => ExportHistoryPdf(capturedId, filename)">
-                        🖨️ إعادة طباعة
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-success"
+                                @onclick="() => ExportHistoryExcel(capturedBatch, capturedName)">
+                            📊 Excel
+                        </button>
+                        <button class="btn btn-sm btn-light"
+                                @onclick="() => ExportHistoryPdf(capturedId, capturedPdfName)">
+                            🖨️ إعادة طباعة
+                        </button>
+                    </div>
                 </div>
 
                 @* ── Visible summary table ── *@
@@ -212,10 +227,12 @@
 
             @* ── Hidden printable version for this batch ── *@
             <div id="@batchId" dir="rtl"
-                 style="position:absolute;left:-9999px;top:0;
+                 style="position:fixed;left:-9999px;top:0;
                                 background:white;padding:20px;width:1100px;
                                 font-family:'Arial',sans-serif;">
-
+                <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#666;">
+                    الملحق 06
+                </div>
                 <div style="text-align:center;margin-bottom:8px;">
                     <div style="font-weight:bold;font-size:1.05rem;">
                         الجمهورية الجزائرية الديمقراطية الشعبية
@@ -238,8 +255,7 @@
                     </span>
                 </div>
 
-                <table style="width:100%;border-collapse:collapse;
-                                      font-size:.75rem;text-align:center;">
+                <table style="width:100%;border-collapse:collapse;font-size:.75rem;text-align:center;">
                     <thead>
                         <tr style="background:#222;color:white;">
                             <th style="@th;width:36px;">رقم<br />الترتيب (*)</th>
@@ -257,27 +273,21 @@
                     <tbody>
                         @foreach (var d in batchList)
                         {
-                            var reduction = Math.Round(d.Droit * 0.30m, 0,
-                            MidpointRounding.AwayFromZero);
+                            var reduction = Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero);
                             <tr style="border-bottom:1px solid #ccc;">
                                 <td style="@td;">@d.Number</td>
-                                <td style="@td;text-align:right;">
-                                    @d.RedevableInfo.FullName
-                                </td>
+                                <td style="@td;text-align:right;">@d.RedevableInfo.FullName</td>
                                 <td style="@td;">@Fmt(d.MontantTotal)</td>
                                 <td style="@td;">@Fmt(d.MontantRestant)</td>
                                 <td style="@td;">@Fmt(d.PA)</td>
                                 <td style="@td;">@Fmt(d.PR)</td>
                                 <td style="@td;">@Fmt(reduction)</td>
-                                <td style="@td;font-weight:bold;">
-                                    @(d.DafaaWahida ? "ك" : "ق")
-                                </td>
+                                <td style="@td;font-weight:bold;">@(d.DafaaWahida ? "ك" : "ق")</td>
                                 <td style="@td;"></td>
                                 <td style="@td;"></td>
                             </tr>
                         }
-                        <tr style="background:#f0f0f0;font-weight:bold;
-                                           border-top:2px solid #333;">
+                        <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #333;">
                             <td colspan="2" style="@td;text-align:right;">المجموع</td>
                             <td style="@td;">@Fmt(batchList.Sum(d => d.MontantTotal))</td>
                             <td style="@td;">@Fmt(batchList.Sum(d => d.MontantRestant))</td>
@@ -285,8 +295,7 @@
                             <td style="@td;">@Fmt(batchList.Sum(d => d.PR))</td>
                             <td style="@td;">
                                 @Fmt(batchList.Sum(d =>
-                                Math.Round(d.Droit * 0.30m, 0,
-                                MidpointRounding.AwayFromZero)))
+                                Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero)))
                     </td>
                     <td colspan="3" style="@td;"></td>
                 </tr>
@@ -298,21 +307,18 @@
             (**) طريقة تسوية الدين: كليا (ك) أو على أقساط (ق)
         </div>
 
-        <div style="display:flex;justify-content:space-between;
-                            margin-top:30px;font-size:.82rem;">
+        <div style="display:flex;justify-content:space-between;margin-top:30px;font-size:.82rem;">
             <div>
                 حررت بـ: المركز الجواري الدبيلة &nbsp;&nbsp;
-                في: @batchDate.ToString("dd/MM/yyyy")
+                في: @grp.First().Annex6SentAt!.Value.ToString("dd/MM/yyyy")
             </div>
             <div style="text-align:center;">
                 قابض الضرائب:<br /><br /><br />
-                (الإمضاء والختم)
+               
             </div>
         </div>
 
-        <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#666;">
-            الملحق 06
-        </div>
+      
     </div>
 
         batchIndex++;
@@ -320,32 +326,291 @@
     </div>
 }
 
+@* ══ SCRIPTS ════════════════════════════════════════════════════════════ *@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 
 <script>
-       window.exportAnnex6Pdf = async (elementId, filename) => {
+    // ── PDF export ──────────────────────────────────────────────────────────
+    window.exportAnnex6Pdf = async (elementId, filename) => {
         const el = document.getElementById(elementId);
         if (!el) return;
-
         const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
         const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
-
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
         const ratio = pageW / canvas.width;
         const scaledH = canvas.height * ratio;
-
         let yOffset = 0;
         while (yOffset < scaledH) {
             if (yOffset > 0) pdf.addPage();
             pdf.addImage(imgData, 'PNG', 0, -yOffset, pageW, scaledH);
             yOffset += pageH;
         }
-
         pdf.save(filename);
+    };
+
+    // ── Excel export (ExcelJS — full styling, RTL) ──────────────────────────
+    // meta: { diraya, qabada, date, batchLabel }
+    window.exportAnnex6Excel = async (rows, filename, meta) => {
+        const wb = new ExcelJS.Workbook();
+        wb.creator  = 'ART122';
+        wb.created  = new Date();
+
+        const ws = wb.addWorksheet('الملحق 06', {
+            views: [{ rightToLeft: true }]   // ← RTL from the start
+        });
+
+        const COL = 10;
+
+        // ── helpers ──────────────────────────────────────────────────────────
+        const darkFill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF222222' } };
+        const grayFill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
+        const titleFill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1a1a2e' } };
+        const whiteFill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+
+        const thinBorder = {
+            top:    { style: 'thin', color: { argb: 'FF000000' } },
+            left:   { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            right:  { style: 'thin', color: { argb: 'FF000000' } }
+        };
+        const thickBorder = {
+            top:    { style: 'medium', color: { argb: 'FF000000' } },
+            left:   { style: 'medium', color: { argb: 'FF000000' } },
+            bottom: { style: 'medium', color: { argb: 'FF000000' } },
+            right:  { style: 'medium', color: { argb: 'FF000000' } }
+        };
+
+        const fontWhiteBold = { name: 'Arial', size: 10, bold: true,  color: { argb: 'FFFFFFFF' } };
+        const fontBlackBold = { name: 'Arial', size: 10, bold: true,  color: { argb: 'FF000000' } };
+        const fontBlack     = { name: 'Arial', size: 9,  bold: false, color: { argb: 'FF000000' } };
+        const fontSmall     = { name: 'Arial', size: 8,  bold: false, color: { argb: 'FF555555' } };
+
+        const center = { horizontal: 'center', vertical: 'middle', wrapText: true, readingOrder: 2 };
+        const right  = { horizontal: 'right',  vertical: 'middle', wrapText: true, readingOrder: 2 };
+        const left   = { horizontal: 'left',   vertical: 'middle', wrapText: true, readingOrder: 2 };
+
+        function mergeAndStyle(rowNum, startCol, endCol, value, font, fill, alignment, border) {
+            if (startCol !== endCol)
+                ws.mergeCells(rowNum, startCol, rowNum, endCol);
+            const cell = ws.getCell(rowNum, startCol);
+            cell.value     = value;
+            cell.font      = font      || fontBlack;
+            cell.fill      = fill      || whiteFill;
+            cell.alignment = alignment || center;
+            if (border) cell.border   = border;
+        }
+
+        function applyBorderToRow(rowNum) {
+            for (let c = 1; c <= COL; c++) {
+                ws.getCell(rowNum, c).border = thinBorder;
+            }
+        }
+
+        // ── Column widths (matches PDF proportions) ───────────────────────────
+        ws.columns = [
+            { width: 10 },  // رقم الترتيب
+            { width: 36 },  // الاسم
+            { width: 18 },  // المبلغ الكلي
+            { width: 20 },  // الحقوق (70%)
+            { width: 14 },  // غ. الوعاء
+            { width: 14 },  // غ. التحصيل
+            { width: 16 },  // التخفيض (30%)
+            { width: 12 },  // طريقة التسوية
+            { width: 18 },  // ملاحظات
+            { width: 22 },  // رقم وتاريخ مقرر الإلغاء
+        ];
+
+        let r = 1; // current row counter
+
+        // ══ HEADER BLOCK ═════════════════════════════════════════════════════
+
+        // Row 0 — الملحق 06 label (top-left, first row)
+        ws.getRow(r).height = 14;
+        mergeAndStyle(r, 1, COL, 'الملحق 06', fontSmall, whiteFill, left);
+        r++;
+
+        // Row 1 — Republic
+        ws.getRow(r).height = 20;
+        mergeAndStyle(r, 1, COL,
+            'الجمهورية الجزائرية الديمقراطية الشعبية',
+            { name: 'Arial', size: 12, bold: true, color: { argb: 'FF000000' } },
+            whiteFill, center);
+        r++;
+
+        // Row 2 — Ministry
+        ws.getRow(r).height = 18;
+        mergeAndStyle(r, 1, COL,
+            'وزارة المالية — المديرية العامة للضرائب',
+            fontBlackBold, whiteFill, center);
+        r++;
+
+        // Row 3 — Diraya / Qabada (split)
+        ws.getRow(r).height = 16;
+        mergeAndStyle(r, 1, 5, 'مديرية: ' + (meta.diraya || 'الوادي'),
+            fontBlack, whiteFill, right);
+        mergeAndStyle(r, 6, COL, 'قباضة الضرائب لـ: ' + (meta.qabada || 'المركز الجواري الدبيلة'),
+            fontBlack, whiteFill, left);
+        r++;
+
+        // Row 4 — empty
+        ws.getRow(r).height = 6; r++;
+
+        // Row 5–7 — Title box (border around all 3 rows)
+        ws.getRow(r).height = 18;
+        mergeAndStyle(r, 1, COL,
+            'الجدول الإسمي الجماعي للتصريحات بالاكتتاب',
+            { name: 'Arial', size: 11, bold: true, color: { argb: 'FF000000' } },
+            whiteFill, center, { top: thickBorder.top, left: thickBorder.left, right: thickBorder.right });
+        r++;
+
+        ws.getRow(r).height = 16;
+        mergeAndStyle(r, 1, COL,
+            'في إجراء تطهير الديون الجبائية',
+            fontBlackBold, whiteFill, center,
+            { left: thickBorder.left, right: thickBorder.right });
+        r++;
+
+        ws.getRow(r).height = 16;
+        mergeAndStyle(r, 1, COL,
+            '(المادة 122 من قانون المالية لسنة 2026)',
+            fontBlack, whiteFill, center,
+            { bottom: thickBorder.bottom, left: thickBorder.left, right: thickBorder.right });
+        r++;
+
+        // Row — batch label (history only)
+        if (meta.batchLabel) {
+            ws.getRow(r).height = 16;
+            mergeAndStyle(r, 1, COL,
+                'دفعة رقم: ' + meta.batchLabel,
+                fontBlackBold, whiteFill, center);
+            r++;
+        }
+
+        // Row — empty
+        ws.getRow(r).height = 6; r++;
+
+        // ══ TABLE HEADER ═════════════════════════════════════════════════════
+        const headers = [
+            'رقم\nالترتيب (*)',
+            'الاسم / اللقب أو التسمية الاجتماعية',
+            'المبلغ الكلي\nللدين الجبائي',
+            'الحقوق البسيطة\nالمستحقة (70%)',
+            'غرامات\nالوعاء',
+            'غرامات\nالتحصيل',
+            'مبلغ\nالتخفيض (30%)',
+            'طريقة\nتسوية الدين (**)',
+            'ملاحظات',
+            'رقم وتاريخ\nمقرر الإلغاء'
+        ];
+
+        ws.getRow(r).height = 36;
+        headers.forEach((h, i) => {
+            const cell     = ws.getCell(r, i + 1);
+            cell.value     = h;
+            cell.font      = fontWhiteBold;
+            cell.fill      = darkFill;
+            cell.alignment = center;
+            cell.border    = {
+                top:    { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left:   { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right:  { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
+        r++;
+
+        // ══ DATA ROWS ════════════════════════════════════════════════════════
+        const isLastRow = (idx) => idx === rows.length - 1; // last row = totals
+
+        rows.forEach((row, idx) => {
+            const isTotals = isLastRow(idx);
+            ws.getRow(r).height = 18;
+
+            row.forEach((val, c) => {
+                const cell     = ws.getCell(r, c + 1);
+                cell.value     = val;
+                cell.border    = thinBorder;
+                cell.fill      = isTotals ? grayFill : whiteFill;
+                cell.font      = isTotals ? fontBlackBold : fontBlack;
+
+                // Column-specific alignment
+                if (c === 0) cell.alignment = { ...center };          // رقم
+                else if (c === 1) cell.alignment = { ...right };      // الاسم
+                else if (c === 7) cell.alignment = { ...center };     // ك/ق
+                else cell.alignment = { ...center };
+
+                // Numeric formatting for amount columns
+                if (c >= 2 && c <= 6 && typeof val === 'number') {
+                    cell.numFmt = '#,##0';
+                }
+            });
+
+            // Merge first two cells for totals label
+            if (isTotals) {
+                ws.mergeCells(r, 1, r, 2);
+                ws.getCell(r, 1).alignment = { ...right };
+            }
+            r++;
+        });
+
+        // ══ FOOTER ═══════════════════════════════════════════════════════════
+
+        // Empty row
+        ws.getRow(r).height = 6; r++;
+
+        // Notes
+        ws.getRow(r).height = 14;
+        mergeAndStyle(r, 1, COL,
+            '(*) رقم الترتيب الواجب تسجيله في التصريح بالاكتتاب',
+            fontSmall, whiteFill, right);
+        r++;
+
+        ws.getRow(r).height = 14;
+        mergeAndStyle(r, 1, COL,
+            '(**) طريقة تسوية الدين: كليا (ك) أو على أقساط (ق)',
+            fontSmall, whiteFill, right);
+        r++;
+
+        // Empty row
+        ws.getRow(r).height = 10; r++;
+
+        // Date / place
+        ws.getRow(r).height = 16;
+        mergeAndStyle(r, 1, 6,
+            'حررت بـ: ' + (meta.qabada || 'المركز الجواري الدبيلة') + '   في: ' + (meta.date || ''),
+            fontBlack, whiteFill, right);
+        mergeAndStyle(r, 7, COL, 'قابض الضرائب:', fontBlack, whiteFill, center);
+        r++;
+
+        // Signature space
+        ws.getRow(r).height = 40; r++;
+
+        // ws.getRow(r).height = 14;
+        // mergeAndStyle(r, 7, COL, '(الإمضاء والختم)', fontSmall, whiteFill, center);
+        r++;
+
+        // Empty
+        ws.getRow(r).height = 10; r++;
+
+        // Annex label
+        // ws.getRow(r).height = 14;
+        // mergeAndStyle(r, 1, COL, 'الملحق 06', fontSmall, whiteFill, left);
+
+        // ── Download ─────────────────────────────────────────────────────────
+        const buffer = await wb.xlsx.writeBuffer();
+        const blob   = new Blob([buffer],
+            { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url    = URL.createObjectURL(blob);
+        const a      = document.createElement('a');
+        a.href       = url;
+        a.download   = filename + '.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
     };
 </script>
 
@@ -354,6 +619,7 @@
     IEnumerable<IGrouping<int, Declaration>>? sentGroups;
 
     bool exporting = false;
+    bool exportingExcel = false;
     bool sending = false;
     string successMsg = string.Empty;
 
@@ -365,30 +631,22 @@
     async Task Load()
     {
         var all = await DeclarationService.GetAllAsync();
-
         pending = await DeclarationService.GetPendingAnnex6Async();
-
-        // Group already-sent by the rounded minute so simultaneous sends cluster
         sentGroups = all
-     .Where(d => d.Annex6BatchNumber.HasValue)
-     .GroupBy(d => d.Annex6BatchNumber!.Value)
-     .OrderByDescending(g => g.Key);
+            .Where(d => d.Annex6BatchNumber.HasValue)
+            .GroupBy(d => d.Annex6BatchNumber!.Value)
+            .OrderByDescending(g => g.Key);
     }
 
     async Task ConfirmSend()
     {
         if (pending is null || !pending.Any()) return;
-
         var confirmed = await JS.InvokeAsync<bool>("confirm",
             $"سيتم تسجيل إرسال {pending.Count} تصريح إلى المديرية.\nهل تؤكد؟");
-
         if (!confirmed) return;
-
         sending = true;
         StateHasChanged();
-
         await DeclarationService.MarkAsSentToAnnex6Async(pending.Select(d => d.Id).ToList());
-
         successMsg = $"✅ تم تسجيل إرسال {pending.Count} تصريح بتاريخ {DateTime.Now:dd/MM/yyyy HH:mm}.";
         sending = false;
         await Load();
@@ -405,15 +663,88 @@
         exporting = false;
     }
 
-    static DateTime RoundToMinute(DateTime dt) =>
-        new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0);
+    // ── Excel: pending ──────────────────────────────────────────────────────
+    async Task ExportExcel()
+    {
+        if (pending is null || !pending.Any()) return;
+        exportingExcel = true;
+        StateHasChanged();
 
-    static string Fmt(decimal v) =>
-        v == 0 ? "-" : string.Format("{0:N0}", v).Replace(",", "\u00A0") + ",00";
+        var rows = BuildExcelRows(pending);
+        rows.Add(new object[]
+        {
+            "المجموع", "",
+            pending.Sum(d => d.MontantTotal),
+            pending.Sum(d => d.MontantRestant),
+            pending.Sum(d => d.PA),
+            pending.Sum(d => d.PR),
+            pending.Sum(d => Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero)),
+            "", "", ""
+        });
 
+        var meta = new
+        {
+            diraya = "الوادي",
+            qabada = "المركز الجواري الدبيلة",
+            date = DateTime.Today.ToString("dd/MM/yyyy"),
+            batchLabel = (string?)null
+        };
+
+        await JS.InvokeVoidAsync("exportAnnex6Excel", rows,
+            $"annex6_art122_{DateTime.Today:yyyy-MM-dd}", meta);
+        exportingExcel = false;
+    }
+
+    // ── Excel: history batch ────────────────────────────────────────────────
+    async Task ExportHistoryExcel(List<Declaration> batch, string filename)
+    {
+        var rows = BuildExcelRows(batch);
+        rows.Add(new object[]
+        {
+            "المجموع", "",
+            batch.Sum(d => d.MontantTotal),
+            batch.Sum(d => d.MontantRestant),
+            batch.Sum(d => d.PA),
+            batch.Sum(d => d.PR),
+            batch.Sum(d => Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero)),
+            "", "", ""
+        });
+
+        var sentDate = batch.First().Annex6SentAt?.ToString("dd/MM/yyyy") ?? DateTime.Today.ToString("dd/MM/yyyy");
+        var batchNum = batch.First().Annex6BatchNumber?.ToString() ?? "";
+
+        var meta = new
+        {
+            diraya = "الوادي",
+            qabada = "المركز الجواري الدبيلة",
+            date = sentDate,
+            batchLabel = batchNum
+        };
+
+        await JS.InvokeVoidAsync("exportAnnex6Excel", rows, filename, meta);
+    }
+
+    // ── Shared row builder ──────────────────────────────────────────────────
+    static List<object[]> BuildExcelRows(List<Declaration> list) =>
+        list.Select(d => new object[]
+        {
+            d.Number,
+            d.RedevableInfo.FullName,
+            d.MontantTotal,
+            d.MontantRestant,
+            d.PA,
+            d.PR,
+            Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero),
+            d.DafaaWahida ? "ك" : "ق",
+            "",
+            ""
+        }).ToList<object[]>();
 
     async Task ExportHistoryPdf(string elementId, string filename)
     {
         await JS.InvokeVoidAsync("exportAnnex6Pdf", elementId, filename);
     }
+
+    static string Fmt(decimal v) =>
+        v == 0 ? "-" : string.Format("{0:N0}", v).Replace(",", "\u00A0") + ",00";
 }

@@ -241,7 +241,7 @@ public class Art122PdfService : IArt122PdfService
 
         var dto = new Art122FormDto
         {
-            // Identity
+            // ── Identity ─────────────────────────────────────────────────────
             FullName = redevable.FullName,
             Etablissement = redevable.Etablissement,
             Activite = redevable.Activite,
@@ -250,21 +250,26 @@ public class Art122PdfService : IArt122PdfService
             Telephone = redevable.Telephone,
             Email = redevable.Email,
 
-            // Amounts from saved declaration snapshot
+            // ── Amounts from saved declaration snapshot ────────────────────
             Droit = declaration.Droit,
             PA = declaration.PA,
             PR = declaration.PR,
 
-            // Declaration metadata
+            // ── Declaration stamp (number + date next to it) ───────────────
             DeclarationNumber = declaration.Number.ToString(),
-            QabadhaDaraa = HardcodedQabadha,
-            DateEtatFiscal = declaration.Date.ToString("dd/MM/yyyy"),
+            DeclarationCity = declaration.Date.ToString("yyyy/MM/dd"), // ← same date as others
 
-            // Payment method
+            // ── Tax office ────────────────────────────────────────────────
+            QabadhaDaraa = HardcodedQabadha,
+            DateEtatFiscal = declaration.Date.ToString("yyyy/MM/dd"),
+
+            // ── Payment method ─────────────────────────────────────────────
             DafaaWahida = declaration.DafaaWahida,
             AlaAqsat = declaration.AlaAqsat,
 
-            SignatureDate = declaration.Date.ToString("dd/MM/yyyy"),
+            // ── Signature ─────────────────────────────────────────────────
+            SignatureCity = "الدبيلة",                                  // ← city before signature
+            SignatureDate = declaration.Date.ToString("yyyy/MM/dd"),
         };
 
         return await FillFormAsync(dto);
