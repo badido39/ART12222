@@ -52,11 +52,18 @@ public class DeclarationService : IDeclarationService
     {
         return await _db.Declarations
             .Include(d => d.RedevableInfo)
-            .Where(d => d.Annex6SentAt == null)
+            .Include(d => d.Versements)
+            .Where(d => d.Annex6SentAt == null
+                   && (
+                       // دفعة واحدة → الوصل مدفوع
+                       (d.DafaaWahida && d.Versements.All(v => v.EstPaye))
+                       ||
+                       // على أقساط → جميع الأقساط مدفوعة
+                       (d.AlaAqsat && d.Versements.Any() && d.Versements.All(v => v.EstPaye))
+                   ))
             .OrderBy(d => d.Number)
             .ToListAsync();
     }
-
     public async Task MarkAsSentToAnnex6Async(List<int> ids)
     {
         var nextBatch = await _db.Declarations

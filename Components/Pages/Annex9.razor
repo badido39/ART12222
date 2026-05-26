@@ -530,8 +530,12 @@
         dafaaPA = dafaaDecls.Sum(d => d.PA);
         dafaaPR = dafaaDecls.Sum(d => d.PR);
         dafaaTotal = dafaaDecls.Sum(d => d.MontantTotal);
-        dafaa70 = dafaaDecls.Sum(d => d.MontantRestant);
-        dafaaReduction = dafaaDecls
+        dafaa70 = dafaaDecls.Sum(d =>
+            d.Versements
+                .Where(v => v.EstPaye
+                         && v.DatePaiement.HasValue
+                         && v.DatePaiement.Value <= cutoff)
+                .Sum(v => v.Montant)); dafaaReduction = dafaaDecls
             .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
             .Sum(d => Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero));
         dafaaAlgha = dafaaDecls
@@ -549,8 +553,12 @@
         aqsatPA = aqsatDecls.Sum(d => d.PA);
         aqsatPR = aqsatDecls.Sum(d => d.PR);
         aqsatTotal = aqsatDecls.Sum(d => d.MontantTotal);
-        aqsat70 = aqsatDecls.Sum(d => d.MontantRestant);
-        aqsatReduction = aqsatDecls
+        aqsat70 = aqsatDecls.Sum(d =>
+            d.Versements
+                .Where(v => v.EstPaye
+                         && v.DatePaiement.HasValue
+                         && v.DatePaiement.Value <= cutoff)
+                .Sum(v => v.Montant)); aqsatReduction = aqsatDecls
             .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
             .Sum(d => Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero));
         aqsatAlgha = aqsatDecls

@@ -11,6 +11,7 @@ public class Art122FormDto
 {
     // ── Identity ─────────────────────────────────────────────────────────────
     public string FullName { get; set; } = string.Empty;
+    public int BP { get; set; }
     public string Etablissement { get; set; } = string.Empty;
     public string Activite { get; set; } = string.Empty;
     public string NIF { get; set; } = string.Empty;
@@ -85,10 +86,11 @@ public class Art122PdfService : IArt122PdfService
 
         // Taxpayer identity
         public const string FullName = "Text14";
+        public const string BP = "Text18";
         public const string Etablissement = "Text15";
         public const string Activite = "Text16";
         public const string NIF = "Text17";
-        public const string RC = "Text18";
+        public const string RC = "Text66";
         public const string Adresse = "Text19";
         public const string Telephone = "Text20";
         public const string Email = "Text21";
@@ -154,15 +156,15 @@ public class Art122PdfService : IArt122PdfService
             Droit = summary.TotalDroit,  // الحقوق البسيطة
             PA = summary.TotalPA,     // غرامات الوعاء
             PR = summary.TotalPR,     // غرامات التحصيل
-
+            BP =summary.BP,
             // Tax office / declaration
             QabadhaDaraa = HardcodedQabadha,
-            DateEtatFiscal = DateTime.Today.ToString("yyyy/MM/dd"),
+            DateEtatFiscal = redevable.DateExtraitDeRole.ToString(),
             DeclarationNumber = "1",
-            DeclarationCity= DateTime.Today.ToString("yyyy/MM/dd"),
+            DeclarationCity= redevable.DateDeclaration.ToString("yyyy/MM/dd"),
 
             // Signature
-            SignatureDate = DateTime.Today.ToString("yyyy/MM/dd"),
+            SignatureDate = redevable.DateDeclaration.ToString("yyyy/MM/dd"),
             SignatureCity= "الدبيلة",
             DafaaWahida = true,
         };
@@ -195,6 +197,8 @@ public class Art122PdfService : IArt122PdfService
             [F.Etablissement] = Center(dto.Etablissement),
             [F.Activite] = Center(dto.Activite),
             [F.NIF] = Center(dto.NIF),
+            [F.BP] = Center(dto.BP.ToString()),
+
             [F.RC] = Center(dto.RC),
             [F.Adresse] = Center(dto.Adresse),
             [F.Telephone] = Center(dto.Telephone),
@@ -246,6 +250,7 @@ public class Art122PdfService : IArt122PdfService
             Etablissement = redevable.Etablissement,
             Activite = redevable.Activite,
             NIF = redevable.NIF.ToString(),
+            BP = redevable.BP,
             Adresse = redevable.Adresse,
             Telephone = redevable.Telephone,
             Email = redevable.Email,
@@ -257,11 +262,11 @@ public class Art122PdfService : IArt122PdfService
 
             // ── Declaration stamp (number + date next to it) ───────────────
             DeclarationNumber = declaration.Number.ToString(),
-            DeclarationCity = declaration.Date.ToString("yyyy/MM/dd"), // ← same date as others
+            DeclarationCity = declaration.RedevableInfo.DateDeclaration.ToString("yyyy/MM/dd"), // ← same date as others
 
             // ── Tax office ────────────────────────────────────────────────
             QabadhaDaraa = HardcodedQabadha,
-            DateEtatFiscal = declaration.Date.ToString("yyyy/MM/dd"),
+            DateEtatFiscal = declaration.RedevableInfo.DateExtraitDeRole.ToString("yyyy/MM/dd"),
 
             // ── Payment method ─────────────────────────────────────────────
             DafaaWahida = declaration.DafaaWahida,
@@ -269,7 +274,7 @@ public class Art122PdfService : IArt122PdfService
 
             // ── Signature ─────────────────────────────────────────────────
             SignatureCity = "الدبيلة",                                  // ← city before signature
-            SignatureDate = declaration.Date.ToString("yyyy/MM/dd"),
+            SignatureDate = declaration.RedevableInfo.DateDeclaration.ToString("yyyy/MM/dd"),
         };
 
         return await FillFormAsync(dto);

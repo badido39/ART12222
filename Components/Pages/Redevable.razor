@@ -7,8 +7,12 @@
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 
+<h4 class="mb-0 fw-bold mb-5 text-center">📋 قائمة المكلفين</h4>
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0 fw-bold">📋 قائمة المكلفين</h4>
+
+    <a href="/redevable-create" class="btn btn-primary btn-sm w-25">
+        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> إدراج مكلف جديد 
+    </a>
     <a href="/annex5" class="btn btn-outline-primary btn-sm">
         📋 سجل الملحق 05
     </a>
@@ -27,7 +31,7 @@
 
         <div class="table-responsive">
             <table class="table table-hover align-middle">
-                <thead class="table-dark text-center">
+                <thead class="table-info text-center">
                     <tr>
                         <th>BP</th>
                         <th>الاسم الكامل</th>

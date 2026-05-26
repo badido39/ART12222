@@ -29,50 +29,110 @@ else
         <div class="col-md-6">
             <div class="card h-100 shadow-sm border-0">
                 <div class="card-header fw-semibold text-white"
-                     style="background:linear-gradient(135deg,#1a1a2e,#2c2c54);">
+                     style="background:linear-gradient(90deg,#003311,#009911); opacity:90%">
                     👤 بيانات المكلف
                 </div>
                 <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-5">الاسم الكامل</dt>
-                        <dd class="col-7 fw-semibold">@redevable.FullName</dd>
+                    @* ── Table 1 : بيانات المكلف ─────────────────────────────────────────── *@
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted fw-semibold" style="width:45%">الاسم الكامل</td>
+                                    <td class="fw-bold">@redevable.FullName</td>
+                                </tr>
 
-                        @if (!string.IsNullOrWhiteSpace(redevable.FilsDe))
-                        {
-                            <dt class="col-5">ابن / بنت</dt>
-                            <dd class="col-7">@redevable.FilsDe</dd>
-                        }
+                                @if (!string.IsNullOrWhiteSpace(redevable.FilsDe))
+                                {
+                                    <tr>
+                                        <td class="text-muted fw-semibold">ابن / بنت</td>
+                                        <td>@redevable.FilsDe</td>
+                                    </tr>
+                                }
 
-                        <dt class="col-5">رقم BP</dt>
-                        <dd class="col-7"><span class="badge bg-dark">@redevable.BP</span></dd>
+                                <tr>
+                                    <td class="text-muted fw-semibold">رقم BP</td>
+                                    <td><span class="badge bg-dark fs-6">@redevable.BP</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">رقم المادة</td>
+                                    <td>@redevable.Article</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">NIF</td>
+                                    <td><span class="font-monospace">@redevable.NIF</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">النشاط</td>
+                                    <td>@redevable.Activite</td>
+                                </tr>
 
-                        <dt class="col-5">رقم المادة</dt>
-                        <dd class="col-7">@redevable.Article</dd>
+                                @if (!string.IsNullOrWhiteSpace(redevable.Etablissement))
+                                {
+                                    <tr>
+                                        <td class="text-muted fw-semibold">المؤسسة</td>
+                                        <td>@redevable.Etablissement</td>
+                                    </tr>
+                                }
 
-                        <dt class="col-5">NIF</dt>
-                        <dd class="col-7">@redevable.NIF</dd>
+                                <tr>
+                                    <td class="text-muted fw-semibold">العنوان</td>
+                                    <td>@redevable.Adresse</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">الهاتف</td>
+                                    <td>
+                                        <a href="tel:@redevable.Telephone" class="text-decoration-none">
+                                            📞 @redevable.Telephone
+                                        </a>
+                                    </td>
+                                </tr>
 
-                        <dt class="col-5">النشاط</dt>
-                        <dd class="col-7">@redevable.Activite</dd>
+                                @if (!string.IsNullOrWhiteSpace(redevable.Email))
+                                {
+                                    <tr>
+                                        <td class="text-muted fw-semibold">البريد الإلكتروني</td>
+                                        <td>
+                                            <a href="mailto:@redevable.Email" class="text-decoration-none">
+                                                ✉️ @redevable.Email
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
 
-                        @if (!string.IsNullOrWhiteSpace(redevable.Etablissement))
-                        {
-                            <dt class="col-5">المؤسسة</dt>
-                            <dd class="col-7">@redevable.Etablissement</dd>
-                        }
-
-                        <dt class="col-5">العنوان</dt>
-                        <dd class="col-7">@redevable.Adresse</dd>
-
-                        <dt class="col-5">الهاتف</dt>
-                        <dd class="col-7">@redevable.Telephone</dd>
-
-                        @if (!string.IsNullOrWhiteSpace(redevable.Email))
-                        {
-                            <dt class="col-5">البريد الإلكتروني</dt>
-                            <dd class="col-7">@redevable.Email</dd>
-                        }
-                    </dl>
+                    @* ── Table 2 : الوضعية الجبائية ──────────────────────────────────────── *@
+                    <div class="mt-3 rounded-3 overflow-hidden border border-1"
+                         style="border-color:#dee2e6!important">
+                        <div class="px-3 py-2 fw-semibold text-white small"
+                             style="background:linear-gradient(90deg,#440011,#770011); opacity:90%">
+                            📄 الوضعية الجبائية
+                        </div>
+                        <table class="table table-sm table-borderless mb-0">
+                            <tbody>
+                                <tr class="border-bottom">
+                                    <td class="text-muted fw-semibold" style="width:55%">
+                                        رقم الوضعية الجبائية
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary fs-6">
+                                            @redevable.NumExtraitDeRole
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">تاريخ الوضعية الجبائية</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border fs-6">
+                                            📅 @redevable.DateExtraitDeRole.ToString("dd/MM/yyyy")
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -85,62 +145,80 @@ else
                     📋 تصريح الاكتتاب — المادة 122
                 </div>
                 <div class="card-body">
-                    @if (declaration is null)
-                    {
-                        <div class="text-muted fst-italic text-center py-3">
-                            ⏳ لم يتم تسجيل أي تصريح بعد.
-                        </div>
-                    }
-                    else
-                    {
-                        <dl class="row mb-0">
-                            <dt class="col-6">رقم التصريح</dt>
-                            <dd class="col-6">
-                                <span class="badge bg-primary fs-6">@declaration.Number</span>
-                            </dd>
-
-                            <dt class="col-6">تاريخ التصريح</dt>
-                            <dd class="col-6">@declaration.Date.ToString("dd/MM/yyyy")</dd>
-
-                            <dt class="col-6">كيفية التسديد</dt>
-                            <dd class="col-6">
-                                @if (declaration.DafaaWahida)
-                                {
-                                    <span class="badge bg-success">💵 دفعة واحدة</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-warning text-dark">
-                                        📅 على أقساط (@declaration.Versements.Count قسط)
-                                    </span>
-                                }
-                            </dd>
-
-                            <dt class="col-6">الحقوق البسيطة</dt>
-                            <dd class="col-6">@Fmt(declaration.Droit)</dd>
-
-                            <dt class="col-6">غرامات الوعاء</dt>
-                            <dd class="col-6 text-warning fw-semibold">@Fmt(declaration.PA)</dd>
-
-                            <dt class="col-6">غرامات التحصيل</dt>
-                            <dd class="col-6 text-warning fw-semibold">@Fmt(declaration.PR)</dd>
-
-                            <dt class="col-6 border-top pt-2 fw-bold">المبلغ الإجمالي</dt>
-                            <dd class="col-6 border-top pt-2 fw-bold text-danger">
-                                @Fmt(declaration.MontantTotal)
-                            </dd>
-
-                            <dt class="col-6 fw-bold">المتبقي (70%)</dt>
-                            <dd class="col-6 fw-bold text-success">
-                                @Fmt(declaration.MontantRestant)
-                            </dd>
-
-                            <dt class="col-6">التخفيض (30%)</dt>
-                            <dd class="col-6 text-purple">
-                                @Fmt(declaration.Droit * 0.30m)
-                            </dd>
-                        </dl>
-                    }
+                    @* ── Table : تصريح الاكتتاب ─────────────────────────────────────────── *@
+                    <div class="card-body">
+                        @if (declaration is null)
+                        {
+                            <div class="text-center py-4">
+                                <div style="font-size:2.5rem;">📭</div>
+                                <div class="text-muted fst-italic mt-2">لم يتم تسجيل أي تصريح بعد.</div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm table-borderless mb-0">
+                                    <tbody>
+                                        <tr class="border-bottom">
+                                            <td class="text-muted fw-semibold" style="width:50%">رقم التصريح</td>
+                                            <td>
+                                                <span class="badge bg-primary fs-6">@declaration.Number</span>
+                                            </td>
+                                        </tr>
+                                        <tr class="border-bottom">
+                                            <td class="text-muted fw-semibold">تاريخ التصريح</td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border fs-6">
+                                                    📅 @declaration.RedevableInfo.DateDeclaration.ToString("yyyy/MM/dd")
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr class="border-bottom">
+                                            <td class="text-muted fw-semibold">كيفية التسديد</td>
+                                            <td>
+                                                @if (declaration.DafaaWahida)
+                                                {
+                                                    <span class="badge bg-success fs-6">💵 دفعة واحدة</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning text-dark fs-6">
+                                                        📅 على أقساط (@declaration.Versements.Count قسط)
+                                                    </span>
+                                                }
+                                            </td>
+                                        </tr>
+                                        <tr class="border-bottom">
+                                            <td class="text-muted fw-semibold">الحقوق البسيطة</td>
+                                            <td class="fw-bold">@Fmt(declaration.Droit)</td>
+                                        </tr>
+                                        <tr class="border-bottom">
+                                            <td class="text-muted fw-semibold">غرامات الوعاء</td>
+                                            <td class="text-warning fw-semibold">@Fmt(declaration.PA)</td>
+                                        </tr>
+                                        <tr class="border-bottom">
+                                            <td class="text-muted fw-semibold">غرامات التحصيل</td>
+                                            <td class="text-warning fw-semibold">@Fmt(declaration.PR)</td>
+                                        </tr>
+                                        <tr class="border-bottom" style="background:rgba(13,110,253,0.06)">
+                                            <td class="fw-bold">المبلغ الإجمالي</td>
+                                            <td class="fw-bold text-danger fs-6">@Fmt(declaration.MontantTotal)</td>
+                                        </tr>
+                                        <tr class="border-bottom" style="background:rgba(13,110,253,0.06)">
+                                            <td class="fw-bold">المتبقي (70%)</td>
+                                            <td class="fw-bold text-success fs-6">@Fmt(declaration.MontantRestant)</td>
+                                        </tr>
+                                        <tr style="background:rgba(13,110,253,0.06)">
+                                            <td class="text-muted fw-semibold">التخفيض (30%)</td>
+                                            <td class="fw-semibold" style="color:#6f42c1">
+                                                @Fmt(declaration.Droit * 0.30m)
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
@@ -494,18 +572,15 @@ else
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label fw-semibold">الحقوق</label>
-                                <input type="number" class="form-control"
-                                       placeholder="0" @bind="currentImpot.Droit" />
+                                <CurrencyInput @bind-Value="currentImpot.Droit" />
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label fw-semibold">غ. الوعاء</label>
-                                <input type="number" class="form-control"
-                                       placeholder="0" @bind="currentImpot.PA" />
+                                <CurrencyInput @bind-Value="currentImpot.PA" />
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label fw-semibold">غ. التحصيل</label>
-                                <input type="number" class="form-control"
-                                       placeholder="0" @bind="currentImpot.PR" />
+                                <CurrencyInput @bind-Value="currentImpot.PR" />
                             </div>
                             <div class="col-md-3 d-flex align-items-end gap-2">
                                 <button class="btn btn-success flex-fill" @onclick="SaveImpot">

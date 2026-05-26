@@ -1,0 +1,63 @@
+﻿@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="input-group">
+    <input type="text"
+           id="@_inputId"
+           class="form-control text-end @CssClass"
+           placeholder="0,00"
+           inputmode="decimal"
+           autocomplete="off" dir="ltr" />
+    <span class="input-group-text fw-bold">دج</span>
+</div>
+
+@code {
+    [Parameter] public decimal Value { get; set; }
+    [Parameter] public EventCallback<decimal> ValueChanged { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+
+    private readonly string _inputId = $"dzd-{Guid.NewGuid():N}";
+    private DotNetObjectReference<CurrencyInput>? _ref;
+    private bool _initialized = false;
+    private decimal _lastSetValue;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _ref = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("CurrencyMask.init", _inputId, _ref);
+            _initialized = true;
+
+            if (Value != 0)
+            {
+                await JS.InvokeVoidAsync("CurrencyMask.setValue", _inputId, (double)Value);
+                _lastSetValue = Value;
+            }
+        }
+        // Sync si la valeur change depuis le parent
+        else if (_initialized && Value != _lastSetValue)
+        {
+            await JS.InvokeVoidAsync("CurrencyMask.setValue", _inputId, (double)Value);
+            _lastSetValue = Value;
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnJsValueChanged(double value)
+    {
+        var dec = Math.Round((decimal)value, 2);
+        if (dec != Value)
+        {
+            _lastSetValue = dec;
+            await ValueChanged.InvokeAsync(dec);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_initialized)
+            await JS.InvokeVoidAsync("CurrencyMask.destroy", _inputId);
+        _ref?.Dispose();
+    }
+}

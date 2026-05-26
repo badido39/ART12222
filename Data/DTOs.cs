@@ -17,6 +17,15 @@
             public string Email { get; set; } = "";
             public string Activite { get; set; } = "";
 
+
+            //new 
+            public string? NumExtraitDeRole { get; set; }
+            public DateTime DateExtraitDeRole { get; set; }
+
+            // date declaration
+            public DateTime DateDeclaration { get; set; } = DateTime.Now;
+
+
             public List<ImpotCreateDto> Impots { get; set; } = new();
         }
 
@@ -30,6 +39,7 @@
             public decimal PR { get; set; }
 
             public int NatureImpotId { get; set; }
+
         }
 
         public class ValidationResult

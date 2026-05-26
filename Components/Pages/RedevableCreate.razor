@@ -9,7 +9,14 @@
     <h4 class="mb-0 fw-bold">➕ تسجيل مكلف جديد</h4>
     <a href="/redevables" class="btn btn-outline-secondary btn-sm">← العودة للقائمة</a>
 </div>
-
+<div class="d-flex justify-content-start align-items-start mb-4">
+    
+        <label class="form-label fw-semibold w-25" >تاريخ التصريح</label>
+        <input type="date" dir="rtl" class="form-control w-25"
+               placeholder="تاريخ التصريح "
+               @bind="model.DateDeclaration" />
+    
+</div>
 <div class="container-fluid px-0">
 
     @* ══ REDEVABLE FORM ══════════════════════════════════════════════════════ *@
@@ -94,30 +101,72 @@
                 </div>
             }
 
-            <div class="text-end mt-3">
-                <button class="btn btn-primary px-4"
-                        @onclick="SaveRedevable"
-                        disabled="@isRedevableSaved">
-                    @if (isRedevableSaved)
-                    {
-                        <span>✅ تم حفظ المكلف</span>
-                    }
-                    else
-                    {
-                        <span>💾 حفظ المكلف</span>
-                    }
-                </button>
-            </div>
+           
         </div>
+        <div class="card-header text-white fw-semibold"
+             style="background:linear-gradient(135deg,#1a1a2e,#2c2c54);">
+            👤 رقم و تاريخ الوضعية الجبائية
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">رقم الوضعية</label>
+                    <input type="number" class="form-control"
+                           placeholder="رقم الوضعية"
+                           @bind="model.NumExtraitDeRole" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">تاريخ الوضعية</label>
+                    <input type="date" class="form-control"
+                           placeholder="تاريخ الوضعية "
+                           @bind="model.DateExtraitDeRole" />
+                </div>
+                </div>
+                </div>
+        <div class="text-end mt-3">
+            <button class="btn btn-primary px-4"
+                    @onclick="SaveRedevable"
+                    disabled="@isRedevableSaved">
+                @if (isRedevableSaved)
+                {
+                    <span>✅ تم حفظ المكلف</span>
+                }
+                else
+                {
+                    <span>💾 حفظ المكلف</span>
+                }
+            </button>
+        </div>
+
     </div>
 
     @* ══ IMPOT FORM ══════════════════════════════════════════════════════════ *@
     @if (!isRedevableSaved)
     {
-        <div class="alert alert-warning d-flex align-items-center gap-2">
-            <span style="font-size:1.3rem;">⚠️</span>
-            <span>يرجى حفظ بيانات المكلف أولاً قبل إضافة الضرائب.</span>
-        </div>
+        @if (saveSuccess)
+        {
+            <div class="alert alert-success d-flex align-items-center gap-2">
+                <span style="font-size:1.3rem;">✅</span>
+                <div>
+                    <strong>تم حفظ جميع البيانات بنجاح!</strong>
+                    <div class="mt-1">
+                        <a href="/redevables" class="btn btn-sm btn-success me-2">📋 قائمة المكلفين</a>
+                        <button class="btn btn-sm btn-outline-secondary"
+                                @onclick="() => saveSuccess = false">
+                            ➕ تسجيل مكلف جديد
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning d-flex align-items-center gap-2">
+                <span style="font-size:1.3rem;">⚠️</span>
+                <span>يرجى حفظ بيانات المكلف أولاً قبل إضافة الضرائب.</span>
+            </div>
+        }
     }
     else
     {
@@ -157,21 +206,15 @@
 
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">الحقوق البسيطة (دج)</label>
-                        <input type="number" class="form-control"
-                               placeholder="0"
-                               @bind="newImpot.Droit" />
+                        <CurrencyInput @bind-Value="newImpot.Droit" />
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">غرامات الوعاء (PA)</label>
-                        <input type="number" class="form-control"
-                               placeholder="0"
-                               @bind="newImpot.PA" />
+                        <CurrencyInput @bind-Value="newImpot.PA" />
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">غرامات التحصيل (PR)</label>
-                        <input type="number" class="form-control"
-                               placeholder="0"
-                               @bind="newImpot.PR" />
+                        <CurrencyInput @bind-Value="newImpot.PR" />
                     </div>
 
                     <div class="col-12">
@@ -262,7 +305,7 @@
 
 @code {
 
-    RedevableCreateDto model = new();
+    RedevableCreateDto model = new(){DateExtraitDeRole = DateTime.Now};
     ImpotCreateDto newImpot = new();
     List<NatureImpot> natures = new();
     string? errorMessage;
@@ -270,16 +313,19 @@
     int savedRedevableId;
     string persistedRoleNumber = string.Empty;
 
+
     protected override async Task OnInitializedAsync()
     {
+       
         natures = await NatureService.GetAllAsync();
+
     }
 
     // ── Save redevable ─────────────────────────────────────────────────────────
     async Task SaveRedevable()
     {
         var check = await RedevableService.ValidateRedevable(
-            model.BP, model.NIF, model.Article);
+            model.BP, model.NIF, model.Article );
 
         if (!check.IsValid) { errorMessage = check.Message; return; }
 
@@ -317,6 +363,8 @@
         persistedRoleNumber = newImpot.RoleNumber;
         newImpot = new ImpotCreateDto { RoleNumber = persistedRoleNumber };
     }
+    // Ajoute cette variable
+    bool saveSuccess = false;
 
     // ── Save all impots ────────────────────────────────────────────────────────
     async Task SaveAll()
@@ -328,5 +376,7 @@
         model = new RedevableCreateDto();
         newImpot = new ImpotCreateDto { RoleNumber = persistedRoleNumber };
         isRedevableSaved = false;
+        saveSuccess = true;      // ← au lieu d'afficher le warning
+
     }
 }

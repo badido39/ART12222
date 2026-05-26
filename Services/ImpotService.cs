@@ -135,7 +135,11 @@ public class RedevableService : IRedevableService
             Telephone = dto.Telephone,
             Email = dto.Email,
             Activite = dto.Activite,
-            NIF = dto.NIF
+            NIF = dto.NIF,
+            NumExtraitDeRole = dto.NumExtraitDeRole,
+            DateExtraitDeRole = dto.DateExtraitDeRole,
+            Etablissement = dto.Etablissement,
+            DateDeclaration = dto.DateDeclaration,
         };
 
         _db.Redevables.Add(entity);

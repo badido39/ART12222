@@ -19,6 +19,7 @@
         // SINGLE nature (not list)
         public int NatureImpotId { get; set; }
         public NatureImpot NatureImpot { get; set; } = null!;
+        //NEW 
     }
 
 
@@ -42,6 +43,13 @@
         public int NIF { get; set; }
         public string Email { get; set; } = string.Empty;
         public string Activite { get; set; } = string.Empty;
+        //new 
+        public string? NumExtraitDeRole { get; set; }
+        public DateTime DateExtraitDeRole { get; set; }
+
+
+        //new Date declartation pour Saisis les Ancien Decalaration
+        public DateTime DateDeclaration { get; set; } = DateTime.Now;
 
         // Navigation
         public List<Impot> Impots { get; set; } = new();
