@@ -17,6 +17,8 @@ namespace ART122.Data
         public DbSet<NatureImpot> NatureImpots => Set<NatureImpot>();
         public DbSet<Declaration> Declarations => Set<Declaration>();
         public DbSet<Versement> Versements => Set<Versement>();
+        public DbSet<AppSettings> AppSettings => Set<AppSettings>();
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

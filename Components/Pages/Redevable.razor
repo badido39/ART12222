@@ -3,15 +3,15 @@
 @using ART122.Services
 @inject IRedevableService RedevableService
 @inject IDeclarationService DeclarationService
+@inject IAppSettingsService AppSettingsService
 @inject IArt122PdfService PdfService
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 
 <h4 class="mb-0 fw-bold mb-5 text-center">📋 قائمة المكلفين</h4>
 <div class="d-flex justify-content-between align-items-center mb-4">
-
     <a href="/redevable-create" class="btn btn-primary btn-sm w-25">
-        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> إدراج مكلف جديد 
+        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> إدراج مكلف جديد
     </a>
     <a href="/annex5" class="btn btn-outline-primary btn-sm">
         📋 سجل الملحق 05
@@ -167,8 +167,7 @@
                 <div class="modal-header text-white"
                      style="background:linear-gradient(135deg,#1a1a2e,#2c2c54);">
                     <h5 class="modal-title">🖨 تصريح الاكتتاب — المادة 122</h5>
-                    <button class="btn-close btn-close-white"
-                            @onclick="ClosePrintModal"></button>
+                    <button class="btn-close btn-close-white" @onclick="ClosePrintModal"></button>
                 </div>
 
                 <div class="modal-body">
@@ -184,6 +183,17 @@
                     {
                         <div class="alert alert-danger">⚠️ @printError</div>
                     }
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                📅 تاريخ التصريح <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control"
+                                   @bind="declarationDate"
+                                   max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
 
                     <label class="form-label fw-semibold">كيفية التسديد:</label>
                     <div class="d-flex gap-3 mb-3">
@@ -264,6 +274,7 @@
                                                 <tr class="@(dateOver ? "table-danger" : "")">
                                                     <td class="text-center fw-bold">@(idx + 1)</td>
                                                     <td>
+                                                        @* HTML date inputs always require yyyy-MM-dd *@
                                                         <input type="date"
                                                                class="form-control form-control-sm @(dateOver ? "is-invalid" : "")"
                                                                value="@row.DatePrevue.ToString("yyyy-MM-dd")"
@@ -401,7 +412,7 @@
     </div>
 }
 
-@* ══ Delete Modal ═════════════════════════════════════════════════════════════  *@
+@* ══ Delete Modal ═════════════════════════════════════════════════════════════ *@
 @if (showDeleteModal && toDelete != null)
 {
     <div class="modal fade show d-block" tabindex="-1"
@@ -441,12 +452,14 @@
     List<RedevableInfo>? redevables;
     List<RedevableInfo>? filtered;
     HashSet<int> registeredIds = [];
+    AppSettings org = new();
     string searchBp = "";
 
     protected override async Task OnInitializedAsync() => await LoadData();
 
     async Task LoadData()
     {
+        org = await AppSettingsService.GetAsync();
         redevables = await RedevableService.GetAllAsync();
         var declarations = await DeclarationService.GetAllAsync();
         registeredIds = declarations.Select(d => d.RedevableInfoId).ToHashSet();
@@ -480,6 +493,7 @@
     List<VersementInput> versementRows = [];
     string dafaaNumeroQuittance = string.Empty;
     DateTime dafaaDatePaiement = DateTime.Today;
+    DateTime declarationDate = DateTime.Today;
 
     static readonly DateTime Deadline = new(2026, 12, 31);
 
@@ -502,6 +516,8 @@
         versementRows = [];
         dafaaNumeroQuittance = string.Empty;
         dafaaDatePaiement = DateTime.Today;
+        declarationDate = DateTime.Today;
+
         printMontantRestant = await DeclarationService.GetMontantRestantAsync(r.Id);
         showPrintModal = true;
     }
@@ -514,6 +530,7 @@
         versementRows = [];
         dafaaNumeroQuittance = string.Empty;
         dafaaDatePaiement = DateTime.Today;
+        declarationDate = DateTime.Today;
     }
 
     void SetPayMode(bool dafaa)
@@ -563,6 +580,7 @@
                 printTarget.Id,
                 dafaaWahida: printDafaaWahida,
                 alaAqsat: !printDafaaWahida,
+                declarationDate: declarationDate,
                 versements: printDafaaWahida ? null : versementRows,
                 numeroQuittance: printDafaaWahida ? dafaaNumeroQuittance : null,
                 datePaiement: printDafaaWahida ? dafaaDatePaiement : null);
@@ -601,8 +619,12 @@
         finally { printingPdfId = null; }
     }
 
+    // ── Format helpers ─────────────────────────────────────────────────────────
     static string FmtDecimal(decimal v) =>
         v == 0 ? "0" : string.Format("{0:N0}", v).Replace(",", "\u00A0") + ",00";
+
+    static string FmtDate(DateTime? d) =>
+        d.HasValue ? d.Value.ToString("yyyy/MM/dd") : "—";
 
     // ── Edit ───────────────────────────────────────────────────────────────────
     RedevableInfo? editModel;

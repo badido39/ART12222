@@ -2,6 +2,7 @@
 @using ART122.Data
 @using ART122.Services
 @inject IDeclarationService DeclarationService
+@inject IAppSettingsService AppSettingsService
 @inject IJSRuntime JS
 
 @* ── Toolbar ───────────────────────────────────────────────────────────── *@
@@ -10,7 +11,8 @@
     <div class="d-flex align-items-center gap-2">
         <label class="form-label mb-0 fw-semibold">الشهر:</label>
         <select class="form-select form-select-sm" style="width:160px;"
-                @bind="selectedMonth" @bind:after="Recalculate">
+                value="@selectedMonth"
+                @onchange="OnMonthChanged">
             @for (int m = 1; m <= 12; m++)
             {
                 var label = new DateTime(2026, m, 1).ToString("MMMM",
@@ -41,12 +43,10 @@
 <div id="annex9-content" dir="rtl"
      style="background:white;padding:20px;font-family:'Cairo','Arial',sans-serif;">
 
-    @* ── الملحق 09 label — TOP ── *@
     <div style="text-align:left;font-size:.7rem;color:#888;margin-bottom:4px;">
         الملحق 09
     </div>
 
-    @* Header *@
     <div style="text-align:center;margin-bottom:6px;">
         <div style="font-weight:bold;font-size:1.05rem;">
             الجمهورية الجزائرية الديمقراطية الشعبية
@@ -56,8 +56,8 @@
 
     <div style="display:flex;justify-content:space-between;
                 margin-bottom:6px;font-size:.85rem;">
-        <div>مديرية الضرائب لولاية الوادي</div>
-        <div>قباضة الضرائب لـ: المركز الجواري الدبيلة</div>
+        <div>مديرية الضرائب لولاية @org.Diraya</div>
+        <div>قباضة الضرائب لـ: @org.Qabada</div>
     </div>
 
     <div style="text-align:center;font-weight:bold;border:2px solid black;
@@ -77,7 +77,6 @@
     }
     else
     {
-        @* ── Main stats table ──────────────────────────────────────────── *@
         <table style="width:100%;border-collapse:collapse;font-size:.72rem;text-align:center;">
             <thead>
                 <tr style="background:#1a1a2e;color:white;">
@@ -101,7 +100,6 @@
                 </tr>
             </thead>
             <tbody>
-                @* Row: دفعة واحدة *@
                 <tr>
                     <td style="@td;font-weight:bold;text-align:right;padding-right:8px;">
                         دفعة واحدة (ك)
@@ -119,7 +117,6 @@
                     <td style="@td;color:red;font-weight:bold;">@Fmt(dafaaRestant)</td>
                 </tr>
 
-                @* Row: على أقساط *@
                 <tr style="background:#fafafa;">
                     <td style="@td;font-weight:bold;text-align:right;padding-right:8px;">
                         على أقساط (ق)
@@ -137,7 +134,6 @@
                     <td style="@td;color:red;font-weight:bold;">@Fmt(aqsatRestant)</td>
                 </tr>
 
-                @* Total row *@
                 <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #333;">
                     <td style="@td;text-align:right;padding-right:8px;">المجموع</td>
                     <td style="@td;">@(dafaaCount + aqsatFullyPaid)</td>
@@ -155,7 +151,7 @@
             </tbody>
         </table>
 
-        @* ── Versements breakdown table (aqsat only) ───────────────────── *@
+        @* ── Versements breakdown (aqsat only) ────────────────────────── *@
         @if (aqsatDecls.Any())
         {
             <div style="margin-top:20px;">
@@ -221,8 +217,8 @@
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:28px;font-size:.82rem;">
             <div>
-                حررت بـ: المركز الجواري الدبيلة &nbsp;&nbsp;
-                في: @DateTime.Today.ToString("dd/MM/yyyy")
+                حررت بـ: @org.Qabada &nbsp;&nbsp;
+                في: @DateTime.Today.ToString("yyyy/MM/dd")
             </div>
             <div style="text-align:center;">
                 قابض الضرائب:<br /><br /><br />
@@ -264,13 +260,10 @@
         wb.creator = 'ART122';
         wb.created = new Date();
 
-        const ws = wb.addWorksheet('الملحق 09', {
-            views: [{ rightToLeft: true }]
-        });
+        const ws = wb.addWorksheet('الملحق 09', { views: [{ rightToLeft: true }] });
 
         const COL = 12;
 
-        // ── Style helpers ──────────────────────────────────────────────────
         const darkFill1 = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF1a1a2e' } };
         const darkFill2 = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF2c2c54' } };
         const darkFill3 = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF162b52' } };
@@ -316,12 +309,10 @@
 
         let r = 1;
 
-        // ══ ROW 1: الملحق 09 — top left ══════════════════════════════════════
         ws.getRow(r).height = 14;
         mergeStyle(r, 1, COL, 'الملحق 09', fSmall, whiteFill, L);
         r++;
 
-        // ══ HEADER BLOCK ══════════════════════════════════════════════════════
         ws.getRow(r).height = 20;
         mergeStyle(r, 1, COL, 'الجمهورية الجزائرية الديمقراطية الشعبية',
             { name:'Arial', size:12, bold:true, color:{ argb:'FF000000' } }, whiteFill, C);
@@ -331,14 +322,14 @@
         mergeStyle(r, 1, COL, 'وزارة المالية — المديرية العامة للضرائب', fBlackBold, whiteFill, C);
         r++;
 
+        // ← diraya و qabada من payload بدل القيم الثابتة
         ws.getRow(r).height = 15;
-        mergeStyle(r, 1, 6,   'مديرية الضرائب لولاية الوادي',              fBlack, whiteFill, R);
-        mergeStyle(r, 7, COL, 'قباضة الضرائب لـ: المركز الجواري الدبيلة',  fBlack, whiteFill, L);
+        mergeStyle(r, 1, 6,   'مديرية الضرائب لولاية ' + payload.diraya, fBlack, whiteFill, R);
+        mergeStyle(r, 7, COL, 'قباضة الضرائب لـ: '     + payload.qabada, fBlack, whiteFill, L);
         r++;
 
-        ws.getRow(r).height = 6; r++; // empty
+        ws.getRow(r).height = 6; r++;
 
-        // Title box — 3 rows with thick outer border
         ws.getRow(r).height = 18;
         mergeStyle(r, 1, COL, 'الوضعية الإحصائية لتطهير الديون الجبائية',
             { name:'Arial', size:11, bold:true, color:{ argb:'FF000000' } }, whiteFill, C,
@@ -347,8 +338,7 @@
 
         ws.getRow(r).height = 16;
         mergeStyle(r, 1, COL, '(المادة 122 من قانون المالية لسنة 2026)',
-            fBlackBold, whiteFill, C,
-            { left:med('FF000000'), right:med('FF000000') });
+            fBlackBold, whiteFill, C, { left:med('FF000000'), right:med('FF000000') });
         r++;
 
         ws.getRow(r).height = 16;
@@ -357,29 +347,21 @@
             { bottom:med('FF000000'), left:med('FF000000'), right:med('FF000000') });
         r++;
 
-        ws.getRow(r).height = 6; r++; // empty
+        ws.getRow(r).height = 6; r++;
 
-        // ══ TABLE HEADER ROW 1 — rowspan/colspan matching PDF ════════════════
         ws.getRow(r).height = 28;
-
         ws.mergeCells(r, 1, r+1, 1);
         { const c=ws.getCell(r,1); c.value='طريقة تسوية الدين (**)'; c.font=fWhiteBold; c.fill=darkFill1; c.alignment=C; c.border=thinWhite; }
-
         ws.mergeCells(r, 2, r, 4);
         { const c=ws.getCell(r,2); c.value='عدد المكتتبين'; c.font=fWhiteBold; c.fill=darkFill1; c.alignment=C; c.border=thinWhite; }
-
         ws.mergeCells(r, 5, r, 8);
         { const c=ws.getCell(r,5); c.value='مبلغ الدين الجبائي إلى تاريخ 31/12/2025'; c.font=fWhiteBold; c.fill=darkFill1; c.alignment=C; c.border=thinWhite; }
-
         ws.mergeCells(r, 9, r, 11);
         { const c=ws.getCell(r,9); c.value='التطهير 2026'; c.font=fWhiteBold; c.fill=darkFill1; c.alignment=C; c.border=thinWhite; }
-
         ws.mergeCells(r, 12, r+1, 12);
         { const c=ws.getCell(r,12); c.value='بواقي التحصيل'; c.font=fWhiteBold; c.fill=darkFill1; c.alignment=C; c.border=thinWhite; }
-
         r++;
 
-        // ── Header Row 2 — sub-headers ────────────────────────────────────────
         ws.getRow(r).height = 24;
         [[2,'المسددون كلياً'],[3,'على أقساط'],[4,'المجموع'],
          [5,'الحقوق البسيطة'],[6,'غ. الوعاء'],[7,'غ. التحصيل'],[8,'المبلغ الكلي'],
@@ -390,22 +372,21 @@
         });
         r++;
 
-        // ══ DATA ROWS ════════════════════════════════════════════════════════
         function writeDataRow(rowData, fill) {
             ws.getRow(r).height = 20;
             [
-                { val:rowData.label,   font:fBlackBold, algn:R,  fmt:null      },
-                { val:rowData.col1,    font:fBlack,     algn:C,  fmt:null      },
-                { val:rowData.col2,    font:fBlack,     algn:C,  fmt:null      },
-                { val:rowData.col3,    font:fBlackBold, algn:C,  fmt:null      },
-                { val:rowData.droit,   font:fBlack,     algn:C,  fmt:'#,##0'   },
-                { val:rowData.pa,      font:fBlack,     algn:C,  fmt:'#,##0'   },
-                { val:rowData.pr,      font:fBlack,     algn:C,  fmt:'#,##0'   },
-                { val:rowData.total,   font:fBlackBold, algn:C,  fmt:'#,##0'   },
-                { val:rowData.pct70,   font:fGreen,     algn:C,  fmt:'#,##0'   },
-                { val:rowData.red30,   font:fPurple,    algn:C,  fmt:'#,##0'   },
-                { val:rowData.algha,   font:fOrange,    algn:C,  fmt:'#,##0'   },
-                { val:rowData.restant, font:fRed,       algn:C,  fmt:'#,##0'   },
+                { val:rowData.label,   font:fBlackBold, algn:R, fmt:null    },
+                { val:rowData.col1,    font:fBlack,     algn:C, fmt:null    },
+                { val:rowData.col2,    font:fBlack,     algn:C, fmt:null    },
+                { val:rowData.col3,    font:fBlackBold, algn:C, fmt:null    },
+                { val:rowData.droit,   font:fBlack,     algn:C, fmt:'#,##0' },
+                { val:rowData.pa,      font:fBlack,     algn:C, fmt:'#,##0' },
+                { val:rowData.pr,      font:fBlack,     algn:C, fmt:'#,##0' },
+                { val:rowData.total,   font:fBlackBold, algn:C, fmt:'#,##0' },
+                { val:rowData.pct70,   font:fGreen,     algn:C, fmt:'#,##0' },
+                { val:rowData.red30,   font:fPurple,    algn:C, fmt:'#,##0' },
+                { val:rowData.algha,   font:fOrange,    algn:C, fmt:'#,##0' },
+                { val:rowData.restant, font:fRed,       algn:C, fmt:'#,##0' },
             ].forEach((def, i) => {
                 const cell = ws.getCell(r, i+1);
                 cell.value=def.val; cell.font=def.font; cell.fill=fill||whiteFill;
@@ -419,14 +400,11 @@
         writeDataRow(payload.aqsatRow, lightFill);
         writeDataRow(payload.totalRow, grayFill);
 
-        // ══ AQSAT DETAIL TABLE ════════════════════════════════════════════════
         if (payload.aqsatDetails && payload.aqsatDetails.length > 0) {
             ws.getRow(r).height = 8; r++;
 
             ws.getRow(r).height = 16;
-            mergeStyle(r, 1, COL,
-                'تفصيل تحصيل الأقساط إلى غاية نهاية شهر ' + payload.month,
-                fBlackBold, whiteFill, R);
+            mergeStyle(r, 1, COL, 'تفصيل تحصيل الأقساط إلى غاية نهاية شهر ' + payload.month, fBlackBold, whiteFill, R);
             r++;
 
             ws.getRow(r).height = 22;
@@ -440,12 +418,12 @@
             payload.aqsatDetails.forEach(d => {
                 ws.getRow(r).height = 18;
                 [
-                    { v:d.number,    f:fBlack,  a:C, fmt:null    },
-                    { v:d.name,      f:fBlack,  a:R, fmt:null    },
-                    { v:d.qtyLabel,  f:fBlack,  a:C, fmt:null    },
-                    { v:d.paid,      f:fGreen,  a:C, fmt:'#,##0' },
-                    { v:d.remaining, f:fRed,    a:C, fmt:'#,##0' },
-                    { v:d.status,    f:fBlack,  a:C, fmt:null    },
+                    { v:d.number,    f:fBlack, a:C, fmt:null    },
+                    { v:d.name,      f:fBlack, a:R, fmt:null    },
+                    { v:d.qtyLabel,  f:fBlack, a:C, fmt:null    },
+                    { v:d.paid,      f:fGreen, a:C, fmt:'#,##0' },
+                    { v:d.remaining, f:fRed,   a:C, fmt:'#,##0' },
+                    { v:d.status,    f:fBlack, a:C, fmt:null    },
                 ].forEach((def,i) => {
                     const cell=ws.getCell(r,i+1);
                     cell.value=def.v; cell.font=def.f; cell.fill=whiteFill;
@@ -456,7 +434,6 @@
             });
         }
 
-        // ══ FOOTER ═══════════════════════════════════════════════════════════
         ws.getRow(r).height = 6; r++;
 
         ws.getRow(r).height = 14;
@@ -465,14 +442,14 @@
 
         ws.getRow(r).height = 10; r++;
 
+        // ← qabada من payload بدل القيمة الثابتة
         ws.getRow(r).height = 16;
-        mergeStyle(r, 1, 7, 'حررت بـ: المركز الجواري الدبيلة   في: ' + payload.today, fBlack, whiteFill, R);
+        mergeStyle(r, 1, 7, 'حررت بـ: ' + payload.qabada + '   في: ' + payload.today, fBlack, whiteFill, R);
         mergeStyle(r, 8, COL, 'قابض الضرائب:', fBlack, whiteFill, C);
         r++;
 
-        ws.getRow(r).height = 40; r++; // signature space
+        ws.getRow(r).height = 40; r++;
 
-        // ── Download ─────────────────────────────────────────────────────────
         const buffer = await wb.xlsx.writeBuffer();
         const blob   = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url    = URL.createObjectURL(blob);
@@ -484,6 +461,7 @@
 
 @code {
     List<Declaration>? all;
+    AppSettings org = new();
     bool exporting = false;
     bool exportingExcel = false;
 
@@ -506,6 +484,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        org = await AppSettingsService.GetAsync();
         all = await DeclarationService.GetAllAsync();
         Recalculate();
     }
@@ -524,46 +503,44 @@
         dafaaDecls = inScope.Where(d => d.DafaaWahida).ToList();
         aqsatDecls = inScope.Where(d => d.AlaAqsat).ToList();
 
-        // دفعة واحدة
+        // ── دفعة واحدة ────────────────────────────────────────────────────────
         dafaaCount = dafaaDecls.Count;
         dafaaDroit = dafaaDecls.Sum(d => d.Droit);
         dafaaPA = dafaaDecls.Sum(d => d.PA);
         dafaaPR = dafaaDecls.Sum(d => d.PR);
         dafaaTotal = dafaaDecls.Sum(d => d.MontantTotal);
         dafaa70 = dafaaDecls.Sum(d =>
-            d.Versements
-                .Where(v => v.EstPaye
-                         && v.DatePaiement.HasValue
-                         && v.DatePaiement.Value <= cutoff)
-                .Sum(v => v.Montant)); dafaaReduction = dafaaDecls
-            .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
-            .Sum(d => Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero));
+                             d.Versements
+                              .Where(v => v.EstPaye && v.DatePaiement.HasValue && v.DatePaiement.Value <= cutoff)
+                              .Sum(v => v.Montant));
+        dafaaReduction = dafaaDecls
+                             .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
+                             .Sum(d => Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero));
         dafaaAlgha = dafaaDecls
-            .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
-            .Sum(d => d.AlghaPA + d.AlghaPR);
+                             .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
+                             .Sum(d => d.AlghaPA + d.AlghaPR);
         dafaaRestant = dafaaTotal - dafaa70 - dafaaReduction - dafaaAlgha;
 
-        // على أقساط
+        // ── على أقساط ─────────────────────────────────────────────────────────
         aqsatCount = aqsatDecls.Count;
         aqsatFullyPaid = aqsatDecls.Count(d =>
-            d.Versements.Any() &&
-            d.Versements.All(v => v.EstPaye && v.DatePaiement <= cutoff));
+                             d.Versements.Any() &&
+                             d.Versements.All(v => v.EstPaye && v.DatePaiement.HasValue && v.DatePaiement.Value <= cutoff));
         aqsatPartial = aqsatCount - aqsatFullyPaid;
         aqsatDroit = aqsatDecls.Sum(d => d.Droit);
         aqsatPA = aqsatDecls.Sum(d => d.PA);
         aqsatPR = aqsatDecls.Sum(d => d.PR);
         aqsatTotal = aqsatDecls.Sum(d => d.MontantTotal);
         aqsat70 = aqsatDecls.Sum(d =>
-            d.Versements
-                .Where(v => v.EstPaye
-                         && v.DatePaiement.HasValue
-                         && v.DatePaiement.Value <= cutoff)
-                .Sum(v => v.Montant)); aqsatReduction = aqsatDecls
-            .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
-            .Sum(d => Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero));
+                             d.Versements
+                              .Where(v => v.EstPaye && v.DatePaiement.HasValue && v.DatePaiement.Value <= cutoff)
+                              .Sum(v => v.Montant));
+        aqsatReduction = aqsatDecls
+                             .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
+                             .Sum(d => Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero));
         aqsatAlgha = aqsatDecls
-            .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
-            .Sum(d => d.AlghaPA + d.AlghaPR);
+                             .Where(d => d.DGDecision == DGDecisionStatus.Acceptee)
+                             .Sum(d => d.AlghaPA + d.AlghaPR);
         aqsatRestant = aqsatTotal - aqsat70 - aqsatReduction - aqsatAlgha;
     }
 
@@ -606,7 +583,9 @@
         var payload = new
         {
             month = monthLabel,
-            today = DateTime.Today.ToString("dd/MM/yyyy"),
+            today = DateTime.Today.ToString("yyyy/MM/dd"),
+            diraya = org.Diraya,   // ← من الإعدادات
+            qabada = org.Qabada,   // ← من الإعدادات
             dafaaRow = new { label = "دفعة واحدة (ك)", col1 = dafaaCount, col2 = (object)"—", col3 = dafaaCount, droit = dafaaDroit, pa = dafaaPA, pr = dafaaPR, total = dafaaTotal, pct70 = dafaa70, red30 = dafaaReduction, algha = dafaaAlgha, restant = dafaaRestant },
             aqsatRow = new { label = "على أقساط (ق)", col1 = aqsatFullyPaid, col2 = (object)aqsatPartial, col3 = aqsatCount, droit = aqsatDroit, pa = aqsatPA, pr = aqsatPR, total = aqsatTotal, pct70 = aqsat70, red30 = aqsatReduction, algha = aqsatAlgha, restant = aqsatRestant },
             totalRow = new { label = "المجموع", col1 = dafaaCount + aqsatFullyPaid, col2 = (object)aqsatPartial, col3 = dafaaCount + aqsatCount, droit = dafaaDroit + aqsatDroit, pa = dafaaPA + aqsatPA, pr = dafaaPR + aqsatPR, total = dafaaTotal + aqsatTotal, pct70 = dafaa70 + aqsat70, red30 = dafaaReduction + aqsatReduction, algha = dafaaAlgha + aqsatAlgha, restant = dafaaRestant + aqsatRestant },
@@ -616,6 +595,16 @@
         await JS.InvokeVoidAsync("exportAnnex9Excel", payload,
             $"annex9_art122_{selectedMonth:D2}_2026");
         exportingExcel = false;
+    }
+
+    async Task OnMonthChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var m))
+        {
+            selectedMonth = m;
+            Recalculate();
+            StateHasChanged();
+        }
     }
 
     static string Fmt(decimal v) =>

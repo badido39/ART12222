@@ -4,6 +4,7 @@
 @using static ART122.Data.DTOs
 @inject IRedevableService RedevableService
 @inject IDeclarationService DeclarationService
+@inject IJSRuntime JS
 
 @if (!loaded)
 {
@@ -136,7 +137,60 @@ else
 
         </div>
 
-        @* ══ ROW 3 : Payment progress bar ════════════════════════════════════ *@
+        @* ══ ROW 3 : ApexCharts — 4 small charts ═════════════════════════════ *@
+        <div class="row g-3 mb-3">
+
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-transparent py-2 fw-semibold"
+                         style="font-size:.82rem;">
+                        🔄 حالة الأقساط
+                    </div>
+                    <div class="card-body p-1">
+                        <div id="chart-versements" style="min-height:200px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-transparent py-2 fw-semibold"
+                         style="font-size:.82rem;">
+                        📄 التصريحات
+                    </div>
+                    <div class="card-body p-1">
+                        <div id="chart-declarations" style="min-height:200px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-transparent py-2 fw-semibold"
+                         style="font-size:.82rem;">
+                        📬 الملحق 06
+                    </div>
+                    <div class="card-body p-1">
+                        <div id="chart-annex6" style="min-height:200px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-transparent py-2 fw-semibold"
+                         style="font-size:.82rem;">
+                        💰 توزيع المبالغ
+                    </div>
+                    <div class="card-body p-1">
+                        <div id="chart-financial" style="min-height:200px;"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        @* ══ ROW 4 : Payment progress bar ════════════════════════════════════ *@
         @if (totalVersements > 0)
         {
             var paidPct = (int)Math.Round(paidVersements * 100.0 / totalVersements);
@@ -178,10 +232,21 @@ else
             </div>
         }
 
-        @* ══ ROW 4 : Tables side by side ═════════════════════════════════════ *@
+        @* ══ ROW 5 : Top 10 taxpayers horizontal bar ═════════════════════════ *@
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-transparent fw-semibold"
+                 style="font-size:.85rem;">
+                📊 أعلى 10 مكلفين — الحقوق البسيطة (دج)
+            </div>
+            <div class="card-body p-2">
+                <div id="chart-top-taxpayers" style="min-height:300px;"></div>
+            </div>
+        </div>
+
+        @* ══ ROW 6 : Tables side by side ═════════════════════════════════════ *@
         <div class="row g-3">
 
-            @* Left — Top taxpayers *@
+            @* Left — Top taxpayers table *@
             <div class="col-lg-7">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-header bg-dark text-white fw-semibold">
@@ -205,8 +270,7 @@ else
                                 @{
                                     int rank = 1;
                                 }
-                                @foreach (var r in summaries.OrderByDescending(x => x.TotalDroit)
-                                                            .Take(10))
+                                @foreach (var r in summaries.OrderByDescending(x => x.TotalDroit).Take(10))
                                 {
                                     var hasDecl = declarations.Any(d => d.RedevableInfoId == r.RedevableId);
                                     <tr>
@@ -228,6 +292,7 @@ else
                                             }
                                             else
                                             {
+
                                                 <span class="badge bg-secondary">—</span>
                                             }
                                         </td>
@@ -243,7 +308,6 @@ else
             @* Right — Overdue versements + undeclared *@
             <div class="col-lg-5 d-flex flex-column gap-3">
 
-                @* Overdue versements *@
                 @if (overdueList.Any())
                 {
                     <div class="card border-0 shadow-sm border-danger"
@@ -280,7 +344,6 @@ else
                     </div>
                 }
 
-                @* Redevables without declaration *@
                 @{
                     var undeclared = summaries
                     .Where(r => !declarations.Any(d => d.RedevableInfoId == r.RedevableId))
@@ -303,8 +366,7 @@ else
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var r in undeclared.OrderByDescending(x => x.TotalDroit)
-                                                                .Take(6))
+                                    @foreach (var r in undeclared.OrderByDescending(x => x.TotalDroit).Take(6))
                                     {
                                         <tr>
                                             <td>@r.BP</td>
@@ -331,6 +393,7 @@ else
 
 @code {
     bool loaded = false;
+    bool chartsRendered = false;
 
     List<RedevableTaxSummaryDto> summaries = new();
     List<Declaration> declarations = new();
@@ -346,6 +409,8 @@ else
     // Overdue list
     record OverdueItem(string name, DateTime date, decimal montant, int declRedevableId);
     List<OverdueItem> overdueList = new();
+
+    // ── Lifecycle ──────────────────────────────────────────────────────────
 
     protected override async Task OnInitializedAsync()
     {
@@ -379,7 +444,7 @@ else
         totalReduction = declarations.Sum(d =>
             Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero));
 
-        // Overdue versements with redevable name
+        // Overdue versements
         overdueList = declarations
             .SelectMany(d => d.Versements
                 .Where(v => !v.EstPaye && v.DatePrevue.Date < DateTime.Today)
@@ -393,6 +458,161 @@ else
 
         loaded = true;
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (loaded && !chartsRendered)
+        {
+            chartsRendered = true;
+            await RenderChartsAsync();
+        }
+    }
+
+    // ── Chart rendering ────────────────────────────────────────────────────
+
+    async Task RenderChartsAsync()
+    {
+        // 1 — Versements donut (paid / late / pending)
+        await RenderDonut(
+            "chart-versements",
+            new[] { paidVersements, lateVersements, pendingVersements },
+            new[] { "مدفوع", "متأخر", "قيد الانتظار" },
+            new[] { "#198754", "#dc3545", "#adb5bd" });
+
+        // 2 — Declarations donut (dafaa / aqsat / undeclared)
+        int undeclaredCount = summaries.Count(r =>
+            !declarations.Any(d => d.RedevableInfoId == r.RedevableId));
+
+        await RenderDonut(
+            "chart-declarations",
+            new[] { declDafaa, declAqsat, undeclaredCount },
+            new[] { "دفعة واحدة", "على أقساط", "غير مصرح" },
+            new[] { "#0d6efd", "#fd7e14", "#adb5bd" });
+
+        // 3 — Annex 6 radial gauge
+        int annex6Pct = declarations.Count > 0
+            ? (int)Math.Round(annex6Sent * 100.0 / declarations.Count)
+            : 0;
+
+        await JS.InvokeVoidAsync("eval", $@"(function(){{
+            new ApexCharts(document.getElementById('chart-annex6'), {{
+                chart  : {{ type: 'radialBar', height: 220, fontFamily: 'Segoe UI, Tahoma, sans-serif' }},
+                series : [{annex6Pct}],
+                labels : ['\u0645\u064f\u0631\u0633\u064e\u0644'],
+                colors : ['#6f42c1'],
+                plotOptions: {{
+                    radialBar: {{
+                        hollow: {{ size: '55%' }},
+                        dataLabels: {{
+                            name : {{ fontSize: '13px', offsetY: 5 }},
+                            value: {{ fontSize: '24px', fontWeight: 700, offsetY: -15,
+                                      formatter: function(v){{ return v + '%' }} }}
+                        }}
+                    }}
+                }},
+                fill: {{ type: 'gradient', gradient: {{
+                    shade: 'dark', type: 'diagonal1',
+                    gradientToColors: ['#a855f7'], stops: [0, 100]
+                }} }}
+            }}).render();
+        }})();");
+
+        // 4 — Financial bar (grouped: droits / PA / PR / reduction)
+        await JS.InvokeVoidAsync("eval", $@"(function(){{
+            new ApexCharts(document.getElementById('chart-financial'), {{
+                chart : {{ type: 'bar', height: 220,
+                           fontFamily: 'Segoe UI, Tahoma, sans-serif',
+                           toolbar: {{ show: false }} }},
+                series: [{{ name: '\u062f\u062c', data: [
+                    {(long)totalDroit70},
+                    {(long)totalPA},
+                    {(long)totalPR},
+                    {(long)totalReduction}
+                ]}}],
+                xaxis: {{ categories: [
+                    '\u062d\u0642\u0648\u0642 70%',
+                    '\u063a. \u0648\u0639\u0627\u0621',
+                    '\u063a. \u062a\u062d\u0635\u064a\u0644',
+                    '\u062a\u062e\u0641\u064a\u0636'
+                ]}},
+                colors : ['#198754', '#fd7e14', '#dc3545', '#6f42c1'],
+                plotOptions: {{ bar: {{ distributed: true, borderRadius: 5, columnWidth: '55%' }} }},
+                dataLabels: {{ enabled: false }},
+                legend    : {{ show: false }},
+                yaxis     : {{ labels: {{ formatter: function(v){{ return (v/1000000).toFixed(1)+'M' }} }} }},
+                tooltip   : {{ y: {{ formatter: function(v){{
+                    return v.toLocaleString('fr-DZ') + ' \u062f\u062c'
+                }}}}}}
+            }}).render();
+        }})();");
+
+        // 5 — Top 10 taxpayers horizontal bar (sorted ascending for readability)
+        var top10 = summaries
+            .OrderByDescending(x => x.TotalDroit)
+            .Take(10)
+            .Reverse()          // ApexCharts draws from bottom → top
+            .ToList();
+
+        var names = string.Join(",", top10.Select(r => $"'{EscJs(r.FullName)}'"));
+        var droits = string.Join(",", top10.Select(r => (long)r.TotalDroit));
+        var pa = string.Join(",", top10.Select(r => (long)r.TotalPA));
+        var pr = string.Join(",", top10.Select(r => (long)r.TotalPR));
+
+        await JS.InvokeVoidAsync("eval", $@"(function(){{
+            new ApexCharts(document.getElementById('chart-top-taxpayers'), {{
+                chart  : {{ type: 'bar', height: 320, stacked: false,
+                            fontFamily: 'Segoe UI, Tahoma, sans-serif',
+                            toolbar: {{ show: false }} }},
+                series : [
+                    {{ name: '\u062d\u0642\u0648\u0642 \u0628\u0633\u064a\u0637\u0629', data: [{droits}] }},
+                    {{ name: '\u063a. \u0648\u0639\u0627\u0621',                        data: [{pa}]     }},
+                    {{ name: '\u063a. \u062a\u062d\u0635\u064a\u0644',                  data: [{pr}]     }}
+                ],
+                xaxis  : {{ categories: [{names}] }},
+                colors : ['#0d6efd', '#fd7e14', '#dc3545'],
+                plotOptions: {{ bar: {{ horizontal: true, borderRadius: 3, barHeight: '60%' }} }},
+                dataLabels : {{ enabled: false }},
+                legend     : {{ position: 'top', fontSize: '12px' }},
+                grid       : {{ xaxis: {{ lines: {{ show: true }} }} }},
+                xaxis      : {{ categories: [{names}],
+                                labels: {{ formatter: function(v){{
+                                    return (v/1000000).toFixed(1) + 'M'
+                                }} }} }},
+                tooltip    : {{ y: {{ formatter: function(v){{
+                    return v.toLocaleString('fr-DZ') + ' \u062f\u062c'
+                }}}}}}
+            }}).render();
+        }})();");
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
+    async Task RenderDonut(string id, int[] series, string[] labels, string[] colors)
+    {
+        var s = string.Join(",", series);
+        var l = string.Join(",", labels.Select(x => $"'{EscJs(x)}'"));
+        var c = string.Join(",", colors.Select(x => $"'{x}'"));
+
+        await JS.InvokeVoidAsync("eval", $@"(function(){{
+            new ApexCharts(document.getElementById('{id}'), {{
+                chart  : {{ type: 'donut', height: 220,
+                            fontFamily: 'Segoe UI, Tahoma, sans-serif' }},
+                series : [{s}],
+                labels : [{l}],
+                colors : [{c}],
+                legend : {{ position: 'bottom', fontSize: '11px', itemMargin: {{ horizontal: 4 }} }},
+                plotOptions: {{ pie: {{ donut: {{ size: '62%',
+                    labels: {{ show: true, total: {{
+                        show: true, fontSize: '13px', fontWeight: 700,
+                        label: '\u0627\u0644\u0645\u062c\u0645\u0648\u0639'
+                    }} }} }} }} }},
+                dataLabels: {{ style: {{ fontSize: '11px' }} }}
+            }}).render();
+        }})();");
+    }
+
+    static string EscJs(string s) =>
+        (s ?? "").Replace("\\", "\\\\").Replace("'", "\\'").Replace("\n", " ").Replace("\r", "");
 
     static string Fmt(decimal v) =>
         v == 0 ? "—" :

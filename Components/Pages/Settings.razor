@@ -1,0 +1,285 @@
+﻿@page "/admin/nature-impot"
+@using ART122.Data
+@using ART122.Services
+@inject INatureImpotService NatureService
+@inject IAppSettingsService AppSettingsService
+
+<h4 class="fw-bold mb-4 text-center">⚙️ إعدادات التطبيق</h4>
+
+@* ══ Section 1 : إعدادات المؤسسة ════════════════════════════════════════ *@
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header text-white fw-semibold"
+         style="background:linear-gradient(135deg,#1a1a2e,#2c2c54);">
+        🏛 إعدادات المؤسسة
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">مديرية الضرائب (الولاية)</label>
+                <input class="form-control" @bind="orgSettings.Diraya"
+                       placeholder="مثال: الوادي" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">القباضة</label>
+                <input class="form-control" @bind="orgSettings.Qabada"
+                       placeholder="مثال: المركز الجواري الدبيلة" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">المصلحة</label>
+                <input class="form-control" @bind="orgSettings.Moslaha"
+                       placeholder="مثال: مصلحة الوعاء" />
+            </div>
+        </div>
+
+        @if (orgSaved)
+        {
+            <div class="alert alert-success mt-3 py-2 mb-0">
+                ✅ تم حفظ إعدادات المؤسسة بنجاح.
+            </div>
+        }
+    </div>
+    <div class="card-footer text-end bg-transparent border-0 pt-0">
+        <button class="btn btn-primary px-4" @onclick="SaveOrg">
+            💾 حفظ الإعدادات
+        </button>
+    </div>
+</div>
+
+@* ══ Section 2 : طبيعة الضرائب ══════════════════════════════════════════ *@
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header text-white fw-semibold"
+         style="background:linear-gradient(135deg,#1a1a2e,#2c2c54);">
+        📂 طبيعة الضرائب
+    </div>
+    <div class="card-body">
+
+        @* ── Form ── *@
+        <div class="row g-3 mb-3 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label fw-semibold">
+                    @(editMode ? "✏️ تعديل الطبيعة" : "➕ إضافة ضريبة جديدة")
+                </label>
+                <input class="form-control"
+                       placeholder="مثال: ضريبة على الدخل الإجمالي (IRG)"
+                       @bind="model.Name" />
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button class="btn @(editMode ? "btn-warning" : "btn-success") flex-fill fw-semibold"
+                        @onclick="Save">
+                    @if (editMode)
+                    {
+                        <span>💾 تحديث</span>
+                    }
+                    else
+                    {
+                        <span>➕ إضافة</span>
+                    }
+                </button>
+                @if (editMode)
+                {
+                    <button class="btn btn-outline-secondary" @onclick="CancelEdit"
+                            title="إلغاء التعديل">
+                        ❌
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (natureSaved)
+        {
+            <div class="alert alert-success py-2 mb-3">✅ تم الحفظ بنجاح.</div>
+        }
+        @if (!string.IsNullOrEmpty(natureError))
+        {
+            <div class="alert alert-danger py-2 mb-3">⚠️ @natureError</div>
+        }
+
+        @* ── List ── *@
+        @if (!list.Any())
+        {
+            <div class="text-center text-muted fst-italic py-4">
+                لا توجد طبيعة ضرائب مسجلة بعد.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead style="background:linear-gradient(135deg,#2c2c54,#1a1a2e);color:white;"
+                           class="text-center">
+                        <tr>
+                            <th class="text-start ps-3">#</th>
+                            <th class="text-start">الاسم</th>
+                            <th style="width:160px;">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int idx = 1;
+                        }
+                        @foreach (var n in list)
+                        {
+                            var isEditing = editMode && model.Id == n.Id;
+                            <tr class="@(isEditing ? "table-warning" : "")">
+                                <td class="text-center fw-bold text-muted">@idx</td>
+                                <td class="fw-semibold">@n.Name</td>
+                                <td>
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <button class="btn btn-sm btn-outline-warning"
+                                                style="min-width:80px;"
+                                                @onclick="() => Edit(n)">
+                                            ✏️ تعديل
+                                        </button>
+                                     
+                                    </div>
+                                </td>
+                            </tr>
+                            idx++;
+                        }
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <td colspan="3" class="text-muted small text-end pe-3">
+                                المجموع: @list.Count طبيعة
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@* ══ Delete confirm modal ════════════════════════════════════════════════ *@
+@if (showDeleteModal && toDelete != null)
+{
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">🗑 تأكيد الحذف</h5>
+                    <button class="btn-close btn-close-white" @onclick="CancelDelete"></button>
+                </div>
+                <div class="modal-body">
+                    <p>هل أنت متأكد من حذف الطبيعة التالية؟</p>
+                    <div class="alert alert-warning py-2 fw-bold">@toDelete.Name</div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" @onclick="CancelDelete">
+                        ❌ إلغاء
+                    </button>
+                    <button class="btn btn-danger" @onclick="DeleteConfirmed">
+                        🗑 تأكيد الحذف
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+    // ── Org settings ──────────────────────────────────────────────────────────
+    AppSettings orgSettings = new();
+    bool orgSaved = false;
+
+    // ── NatureImpot ───────────────────────────────────────────────────────────
+    List<NatureImpot> list = new();
+    NatureImpot model = new();
+    bool editMode = false;
+    bool natureSaved = false;
+    string natureError = string.Empty;
+
+    // ── Delete ────────────────────────────────────────────────────────────────
+    NatureImpot? toDelete;
+    bool showDeleteModal = false;
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        orgSettings = await AppSettingsService.GetAsync();
+        await Load();
+    }
+
+    // ── Org ───────────────────────────────────────────────────────────────────
+    async Task SaveOrg()
+    {
+        await AppSettingsService.SaveAsync(orgSettings);
+        orgSaved = true;
+        StateHasChanged();
+        await Task.Delay(2500);
+        orgSaved = false;
+        StateHasChanged();
+    }
+
+    // ── NatureImpot CRUD ──────────────────────────────────────────────────────
+    async Task Load() => list = await NatureService.GetAllAsync();
+
+    async Task Save()
+    {
+        natureError = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(model.Name))
+        {
+            natureError = "الاسم مطلوب.";
+            return;
+        }
+
+        try
+        {
+            if (editMode)
+                await NatureService.UpdateAsync(model);
+            else
+                await NatureService.CreateAsync(model);
+
+            model = new NatureImpot();
+            editMode = false;
+            natureSaved = true;
+            await Load();
+            StateHasChanged();
+            await Task.Delay(2000);
+            natureSaved = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            natureError = ex.Message;
+        }
+    }
+
+    void Edit(NatureImpot item)
+    {
+        model = new NatureImpot { Id = item.Id, Name = item.Name };
+        editMode = true;
+        natureError = string.Empty;
+    }
+
+    void CancelEdit()
+    {
+        model = new NatureImpot();
+        editMode = false;
+        natureError = string.Empty;
+    }
+
+    void ConfirmDelete(NatureImpot item)
+    {
+        toDelete = item;
+        showDeleteModal = true;
+    }
+
+    void CancelDelete()
+    {
+        toDelete = null;
+        showDeleteModal = false;
+    }
+
+    async Task DeleteConfirmed()
+    {
+        if (toDelete is null) return;
+        await NatureService.DeleteAsync(toDelete.Id);
+        showDeleteModal = false;
+        toDelete = null;
+        await Load();
+    }
+}

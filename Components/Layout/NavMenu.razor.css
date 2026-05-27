@@ -20,8 +20,14 @@
     background-color: rgba(0,0,0,0.4);
 }
 
+.bg-gradient-custom {
+    background: linear-gradient(135deg, #6ea8fe, #8ec5fc, #b6d4fe);
+    min-height: 60px;
+}
+
 .navbar-brand {
-    font-size: 1.1rem;
+    font-size: 1.4rem;
+    letter-spacing: 1px;
 }
 
 .bi {
@@ -103,3 +109,18 @@
         overflow-y: auto;
     }
 }
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1rem;
+}
+
+    .nav-link .bi {
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        margin-left: 4px;
+    }

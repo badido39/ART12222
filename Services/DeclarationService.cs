@@ -13,8 +13,15 @@ public class VersementInput
 public interface IDeclarationService
 {
     Task<List<Declaration>> GetAllAsync();
-    Task<Declaration> CreateAsync(int redevableId, bool dafaaWahida, bool alaAqsat,  List<VersementInput>? versements = null, string? numeroQuittance = null,
+    Task<Declaration> CreateAsync(
+    int redevableId,
+    bool dafaaWahida,
+    bool alaAqsat,
+    DateTime? declarationDate = null,     // ← ajout
+    List<VersementInput>? versements = null,
+    string? numeroQuittance = null,
     DateTime? datePaiement = null);
+
     Task DeleteAsync(int id);
     Task<decimal> GetMontantRestantAsync(int redevableId);
     Task<Declaration?> GetByRedevableIdAsync(int redevableId);
@@ -131,12 +138,13 @@ public class DeclarationService : IDeclarationService
     }
 
     public async Task<Declaration> CreateAsync(
-        int redevableId,
-        bool dafaaWahida,
-        bool alaAqsat,
-        List<VersementInput>? versements,
-        string? numeroQuittance = null,
-        DateTime? datePaiement = null)
+     int redevableId,
+     bool dafaaWahida,
+     bool alaAqsat,
+     DateTime? declarationDate = null,     // ← ajout
+     List<VersementInput>? versements = null,
+     string? numeroQuittance = null,
+     DateTime? datePaiement = null)
     {
         var existing = await _db.Declarations
             .FirstOrDefaultAsync(d => d.RedevableInfoId == redevableId);
@@ -162,10 +170,11 @@ public class DeclarationService : IDeclarationService
         var declaration = new Declaration
         {
             Number = nextNumber,
-            Date = DateTime.Today,
             RedevableInfoId = redevableId,
             DafaaWahida = dafaaWahida,
             AlaAqsat = alaAqsat,
+            Date = declarationDate?.Date ?? DateTime.Today,  // ← fix
+
             NumeroQuittance = numeroQuittance,   // ← map to entity
             DatePaiement = datePaiement,      // ← map to entity
             Droit = droit,

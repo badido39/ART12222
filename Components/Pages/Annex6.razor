@@ -2,6 +2,7 @@
 @using ART122.Data
 @using ART122.Services
 @inject IDeclarationService DeclarationService
+@inject IAppSettingsService AppSettingsService
 @inject IJSRuntime JS
 
 <div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
@@ -48,7 +49,9 @@
 @* ══ PRINTABLE CONTENT ══════════════════════════════════════════════════ *@
 <div id="annex6-content" dir="rtl"
      style="background:white;padding:20px;font-family:'Arial',sans-serif;">
-
+    <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#666;">
+        الملحق 06
+    </div>
     <div class="text-center mb-2">
         <div style="font-weight:bold;font-size:1.05rem;">
             الجمهورية الجزائرية الديمقراطية الشعبية
@@ -57,8 +60,8 @@
     </div>
 
     <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:.85rem;">
-        <div>مديرية: الوادي</div>
-        <div>قباضة الضرائب لـ: المركز الجواري الدبيلة</div>
+        <div>مديرية الضرائب لولاية @org.Diraya</div>
+        <div>قباضة الضرائب لـ: @org.Qabada</div>
     </div>
 
     <div style="text-align:center;font-weight:bold;border:2px solid black;
@@ -134,18 +137,16 @@
 
     <div style="display:flex;justify-content:space-between;margin-top:30px;font-size:.82rem;">
         <div>
-            حررت بـ: المركز الجواري الدبيلة &nbsp;&nbsp;
-            في: @DateTime.Today.ToString("dd/MM/yyyy")
+            حررت بـ: @org.Qabada &nbsp;&nbsp;
+            في: @DateTime.Today.ToString("yyyy/MM/dd")
         </div>
         <div style="text-align:center;">
             قابض الضرائب:<br /><br /><br />
-            (الإمضاء والختم)
+            
         </div>
     </div>
 
-    <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#666;">
-        الملحق 06
-    </div>
+    
         }
 </div>
 
@@ -174,7 +175,7 @@
                                     justify-content-between align-items-center py-1">
                     <span>
                         📤 إرسال رقم: <strong>@grp.Key</strong>
-                        — بتاريخ: @grp.First().Annex6SentAt!.Value.ToString("dd/MM/yyyy")
+                        — بتاريخ: @grp.First().Annex6SentAt!.Value.ToString("yyyy/MM/dd")
                     </span>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-success"
@@ -188,7 +189,6 @@
                     </div>
                 </div>
 
-                @* ── Visible summary table ── *@
                 <div class="card-body p-0">
                     <table class="table table-sm table-hover mb-0" style="font-size:.82rem;">
                         <thead class="table-light">
@@ -230,6 +230,7 @@
                  style="position:fixed;left:-9999px;top:0;
                                 background:white;padding:20px;width:1100px;
                                 font-family:'Arial',sans-serif;">
+
                 <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#666;">
                     الملحق 06
                 </div>
@@ -242,8 +243,8 @@
 
                 <div style="display:flex;justify-content:space-between;
                                     margin-bottom:6px;font-size:.85rem;">
-                    <div>مديرية: الوادي</div>
-                    <div>قباضة الضرائب لـ: المركز الجواري الدبيلة</div>
+                    <div>مديرية الضرائب لولاية @org.Diraya</div>
+                    <div>قباضة الضرائب لـ: @org.Qabada</div>
                 </div>
 
                 <div style="text-align:center;font-weight:bold;border:2px solid black;
@@ -309,16 +310,13 @@
 
         <div style="display:flex;justify-content:space-between;margin-top:30px;font-size:.82rem;">
             <div>
-                حررت بـ: المركز الجواري الدبيلة &nbsp;&nbsp;
-                في: @grp.First().Annex6SentAt!.Value.ToString("dd/MM/yyyy")
+                حررت بـ: @org.Qabada &nbsp;&nbsp;
+                في: @grp.First().Annex6SentAt!.Value.ToString("yyyy/MM/dd")
             </div>
             <div style="text-align:center;">
                 قابض الضرائب:<br /><br /><br />
-               
             </div>
         </div>
-
-      
     </div>
 
         batchIndex++;
@@ -332,7 +330,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 
 <script>
-    // ── PDF export ──────────────────────────────────────────────────────────
     window.exportAnnex6Pdf = async (elementId, filename) => {
         const el = document.getElementById(elementId);
         if (!el) return;
@@ -353,30 +350,26 @@
         pdf.save(filename);
     };
 
-    // ── Excel export (ExcelJS — full styling, RTL) ──────────────────────────
-    // meta: { diraya, qabada, date, batchLabel }
     window.exportAnnex6Excel = async (rows, filename, meta) => {
         const wb = new ExcelJS.Workbook();
-        wb.creator  = 'ART122';
-        wb.created  = new Date();
+        wb.creator = 'ART122';
+        wb.created = new Date();
 
         const ws = wb.addWorksheet('الملحق 06', {
-            views: [{ rightToLeft: true }]   // ← RTL from the start
+            views: [{ rightToLeft: true }]
         });
 
         const COL = 10;
 
-        // ── helpers ──────────────────────────────────────────────────────────
-        const darkFill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF222222' } };
-        const grayFill   = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
-        const titleFill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1a1a2e' } };
-        const whiteFill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+        const darkFill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF222222' } };
+        const grayFill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
+        const whiteFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
 
         const thinBorder = {
-            top:    { style: 'thin', color: { argb: 'FF000000' } },
-            left:   { style: 'thin', color: { argb: 'FF000000' } },
-            bottom: { style: 'thin', color: { argb: 'FF000000' } },
-            right:  { style: 'thin', color: { argb: 'FF000000' } }
+            top:    { style: 'thin',   color: { argb: 'FF000000' } },
+            left:   { style: 'thin',   color: { argb: 'FF000000' } },
+            bottom: { style: 'thin',   color: { argb: 'FF000000' } },
+            right:  { style: 'thin',   color: { argb: 'FF000000' } }
         };
         const thickBorder = {
             top:    { style: 'medium', color: { argb: 'FF000000' } },
@@ -395,9 +388,8 @@
         const left   = { horizontal: 'left',   vertical: 'middle', wrapText: true, readingOrder: 2 };
 
         function mergeAndStyle(rowNum, startCol, endCol, value, font, fill, alignment, border) {
-            if (startCol !== endCol)
-                ws.mergeCells(rowNum, startCol, rowNum, endCol);
-            const cell = ws.getCell(rowNum, startCol);
+            if (startCol !== endCol) ws.mergeCells(rowNum, startCol, rowNum, endCol);
+            const cell     = ws.getCell(rowNum, startCol);
             cell.value     = value;
             cell.font      = font      || fontBlack;
             cell.fill      = fill      || whiteFill;
@@ -405,211 +397,115 @@
             if (border) cell.border   = border;
         }
 
-        function applyBorderToRow(rowNum) {
-            for (let c = 1; c <= COL; c++) {
-                ws.getCell(rowNum, c).border = thinBorder;
-            }
-        }
-
-        // ── Column widths (matches PDF proportions) ───────────────────────────
         ws.columns = [
-            { width: 10 },  // رقم الترتيب
-            { width: 36 },  // الاسم
-            { width: 18 },  // المبلغ الكلي
-            { width: 20 },  // الحقوق (70%)
-            { width: 14 },  // غ. الوعاء
-            { width: 14 },  // غ. التحصيل
-            { width: 16 },  // التخفيض (30%)
-            { width: 12 },  // طريقة التسوية
-            { width: 18 },  // ملاحظات
-            { width: 22 },  // رقم وتاريخ مقرر الإلغاء
+            { width: 10 }, { width: 36 }, { width: 18 }, { width: 20 },
+            { width: 14 }, { width: 14 }, { width: 16 }, { width: 12 },
+            { width: 18 }, { width: 22 },
         ];
 
-        let r = 1; // current row counter
+        let r = 1;
 
-        // ══ HEADER BLOCK ═════════════════════════════════════════════════════
-
-        // Row 0 — الملحق 06 label (top-left, first row)
         ws.getRow(r).height = 14;
         mergeAndStyle(r, 1, COL, 'الملحق 06', fontSmall, whiteFill, left);
         r++;
 
-        // Row 1 — Republic
         ws.getRow(r).height = 20;
-        mergeAndStyle(r, 1, COL,
-            'الجمهورية الجزائرية الديمقراطية الشعبية',
-            { name: 'Arial', size: 12, bold: true, color: { argb: 'FF000000' } },
-            whiteFill, center);
+        mergeAndStyle(r, 1, COL, 'الجمهورية الجزائرية الديمقراطية الشعبية',
+            { name: 'Arial', size: 12, bold: true, color: { argb: 'FF000000' } }, whiteFill, center);
         r++;
 
-        // Row 2 — Ministry
         ws.getRow(r).height = 18;
-        mergeAndStyle(r, 1, COL,
-            'وزارة المالية — المديرية العامة للضرائب',
-            fontBlackBold, whiteFill, center);
+        mergeAndStyle(r, 1, COL, 'وزارة المالية — المديرية العامة للضرائب', fontBlackBold, whiteFill, center);
         r++;
 
-        // Row 3 — Diraya / Qabada (split)
         ws.getRow(r).height = 16;
-        mergeAndStyle(r, 1, 5, 'مديرية: ' + (meta.diraya || 'الوادي'),
-            fontBlack, whiteFill, right);
-        mergeAndStyle(r, 6, COL, 'قباضة الضرائب لـ: ' + (meta.qabada || 'المركز الجواري الدبيلة'),
-            fontBlack, whiteFill, left);
+        mergeAndStyle(r, 1, 5, 'مديرية الضرائب لولاية ' + (meta.diraya || ''),   fontBlack, whiteFill, right);
+        mergeAndStyle(r, 6, COL, 'قباضة الضرائب لـ: ' + (meta.qabada || ''),     fontBlack, whiteFill, left);
         r++;
 
-        // Row 4 — empty
         ws.getRow(r).height = 6; r++;
 
-        // Row 5–7 — Title box (border around all 3 rows)
         ws.getRow(r).height = 18;
-        mergeAndStyle(r, 1, COL,
-            'الجدول الإسمي الجماعي للتصريحات بالاكتتاب',
-            { name: 'Arial', size: 11, bold: true, color: { argb: 'FF000000' } },
-            whiteFill, center, { top: thickBorder.top, left: thickBorder.left, right: thickBorder.right });
+        mergeAndStyle(r, 1, COL, 'الجدول الإسمي الجماعي للتصريحات بالاكتتاب',
+            { name: 'Arial', size: 11, bold: true, color: { argb: 'FF000000' } }, whiteFill, center,
+            { top: thickBorder.top, left: thickBorder.left, right: thickBorder.right });
         r++;
 
         ws.getRow(r).height = 16;
-        mergeAndStyle(r, 1, COL,
-            'في إجراء تطهير الديون الجبائية',
-            fontBlackBold, whiteFill, center,
-            { left: thickBorder.left, right: thickBorder.right });
+        mergeAndStyle(r, 1, COL, 'في إجراء تطهير الديون الجبائية',
+            fontBlackBold, whiteFill, center, { left: thickBorder.left, right: thickBorder.right });
         r++;
 
         ws.getRow(r).height = 16;
-        mergeAndStyle(r, 1, COL,
-            '(المادة 122 من قانون المالية لسنة 2026)',
+        mergeAndStyle(r, 1, COL, '(المادة 122 من قانون المالية لسنة 2026)',
             fontBlack, whiteFill, center,
             { bottom: thickBorder.bottom, left: thickBorder.left, right: thickBorder.right });
         r++;
 
-        // Row — batch label (history only)
         if (meta.batchLabel) {
             ws.getRow(r).height = 16;
-            mergeAndStyle(r, 1, COL,
-                'دفعة رقم: ' + meta.batchLabel,
-                fontBlackBold, whiteFill, center);
+            mergeAndStyle(r, 1, COL, 'دفعة رقم: ' + meta.batchLabel, fontBlackBold, whiteFill, center);
             r++;
         }
 
-        // Row — empty
         ws.getRow(r).height = 6; r++;
 
-        // ══ TABLE HEADER ═════════════════════════════════════════════════════
         const headers = [
-            'رقم\nالترتيب (*)',
-            'الاسم / اللقب أو التسمية الاجتماعية',
-            'المبلغ الكلي\nللدين الجبائي',
-            'الحقوق البسيطة\nالمستحقة (70%)',
-            'غرامات\nالوعاء',
-            'غرامات\nالتحصيل',
-            'مبلغ\nالتخفيض (30%)',
-            'طريقة\nتسوية الدين (**)',
-            'ملاحظات',
-            'رقم وتاريخ\nمقرر الإلغاء'
+            'رقم\nالترتيب (*)', 'الاسم / اللقب أو التسمية الاجتماعية',
+            'المبلغ الكلي\nللدين الجبائي', 'الحقوق البسيطة\nالمستحقة (70%)',
+            'غرامات\nالوعاء', 'غرامات\nالتحصيل', 'مبلغ\nالتخفيض (30%)',
+            'طريقة\nتسوية الدين (**)', 'ملاحظات', 'رقم وتاريخ\nمقرر الإلغاء'
         ];
 
         ws.getRow(r).height = 36;
         headers.forEach((h, i) => {
-            const cell     = ws.getCell(r, i + 1);
-            cell.value     = h;
-            cell.font      = fontWhiteBold;
-            cell.fill      = darkFill;
+            const cell = ws.getCell(r, i + 1);
+            cell.value = h; cell.font = fontWhiteBold; cell.fill = darkFill;
             cell.alignment = center;
-            cell.border    = {
-                top:    { style: 'thin', color: { argb: 'FFFFFFFF' } },
-                left:   { style: 'thin', color: { argb: 'FFFFFFFF' } },
-                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
-                right:  { style: 'thin', color: { argb: 'FFFFFFFF' } }
-            };
+            cell.border = { top: { style:'thin', color:{argb:'FFFFFFFF'} }, left: { style:'thin', color:{argb:'FFFFFFFF'} },
+                            bottom: { style:'thin', color:{argb:'FFFFFFFF'} }, right: { style:'thin', color:{argb:'FFFFFFFF'} } };
         });
         r++;
 
-        // ══ DATA ROWS ════════════════════════════════════════════════════════
-        const isLastRow = (idx) => idx === rows.length - 1; // last row = totals
-
         rows.forEach((row, idx) => {
-            const isTotals = isLastRow(idx);
+            const isTotals = idx === rows.length - 1;
             ws.getRow(r).height = 18;
-
             row.forEach((val, c) => {
-                const cell     = ws.getCell(r, c + 1);
-                cell.value     = val;
-                cell.border    = thinBorder;
-                cell.fill      = isTotals ? grayFill : whiteFill;
-                cell.font      = isTotals ? fontBlackBold : fontBlack;
-
-                // Column-specific alignment
-                if (c === 0) cell.alignment = { ...center };          // رقم
-                else if (c === 1) cell.alignment = { ...right };      // الاسم
-                else if (c === 7) cell.alignment = { ...center };     // ك/ق
-                else cell.alignment = { ...center };
-
-                // Numeric formatting for amount columns
-                if (c >= 2 && c <= 6 && typeof val === 'number') {
-                    cell.numFmt = '#,##0';
-                }
+                const cell = ws.getCell(r, c + 1);
+                cell.value = val; cell.border = thinBorder;
+                cell.fill  = isTotals ? grayFill : whiteFill;
+                cell.font  = isTotals ? fontBlackBold : fontBlack;
+                cell.alignment = c === 1 ? right : center;
+                if (c >= 2 && c <= 6 && typeof val === 'number') cell.numFmt = '#,##0';
             });
-
-            // Merge first two cells for totals label
-            if (isTotals) {
-                ws.mergeCells(r, 1, r, 2);
-                ws.getCell(r, 1).alignment = { ...right };
-            }
+            if (isTotals) { ws.mergeCells(r, 1, r, 2); ws.getCell(r, 1).alignment = right; }
             r++;
         });
 
-        // ══ FOOTER ═══════════════════════════════════════════════════════════
-
-        // Empty row
         ws.getRow(r).height = 6; r++;
 
-        // Notes
         ws.getRow(r).height = 14;
-        mergeAndStyle(r, 1, COL,
-            '(*) رقم الترتيب الواجب تسجيله في التصريح بالاكتتاب',
-            fontSmall, whiteFill, right);
+        mergeAndStyle(r, 1, COL, '(*) رقم الترتيب الواجب تسجيله في التصريح بالاكتتاب', fontSmall, whiteFill, right);
         r++;
 
         ws.getRow(r).height = 14;
-        mergeAndStyle(r, 1, COL,
-            '(**) طريقة تسوية الدين: كليا (ك) أو على أقساط (ق)',
-            fontSmall, whiteFill, right);
+        mergeAndStyle(r, 1, COL, '(**) طريقة تسوية الدين: كليا (ك) أو على أقساط (ق)', fontSmall, whiteFill, right);
         r++;
 
-        // Empty row
         ws.getRow(r).height = 10; r++;
 
-        // Date / place
         ws.getRow(r).height = 16;
-        mergeAndStyle(r, 1, 6,
-            'حررت بـ: ' + (meta.qabada || 'المركز الجواري الدبيلة') + '   في: ' + (meta.date || ''),
-            fontBlack, whiteFill, right);
+        mergeAndStyle(r, 1, 6, 'حررت بـ: ' + (meta.qabada || '') + '   في: ' + (meta.date || ''), fontBlack, whiteFill, right);
         mergeAndStyle(r, 7, COL, 'قابض الضرائب:', fontBlack, whiteFill, center);
         r++;
 
-        // Signature space
         ws.getRow(r).height = 40; r++;
 
-        // ws.getRow(r).height = 14;
-        // mergeAndStyle(r, 7, COL, '(الإمضاء والختم)', fontSmall, whiteFill, center);
-        r++;
-
-        // Empty
-        ws.getRow(r).height = 10; r++;
-
-        // Annex label
-        // ws.getRow(r).height = 14;
-        // mergeAndStyle(r, 1, COL, 'الملحق 06', fontSmall, whiteFill, left);
-
-        // ── Download ─────────────────────────────────────────────────────────
         const buffer = await wb.xlsx.writeBuffer();
-        const blob   = new Blob([buffer],
-            { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const blob   = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url    = URL.createObjectURL(blob);
         const a      = document.createElement('a');
-        a.href       = url;
-        a.download   = filename + '.xlsx';
-        a.click();
+        a.href = url; a.download = filename + '.xlsx'; a.click();
         URL.revokeObjectURL(url);
     };
 </script>
@@ -617,6 +513,7 @@
 @code {
     List<Declaration>? pending;
     IEnumerable<IGrouping<int, Declaration>>? sentGroups;
+    AppSettings org = new();
 
     bool exporting = false;
     bool exportingExcel = false;
@@ -630,6 +527,8 @@
 
     async Task Load()
     {
+        org = await AppSettingsService.GetAsync();
+
         var all = await DeclarationService.GetAllAsync();
         pending = await DeclarationService.GetPendingAnnex6Async();
         sentGroups = all
@@ -647,7 +546,7 @@
         sending = true;
         StateHasChanged();
         await DeclarationService.MarkAsSentToAnnex6Async(pending.Select(d => d.Id).ToList());
-        successMsg = $"✅ تم تسجيل إرسال {pending.Count} تصريح بتاريخ {DateTime.Now:dd/MM/yyyy HH:mm}.";
+        successMsg = $"✅ تم تسجيل إرسال {pending.Count} تصريح بتاريخ {DateTime.Now:yyyy/MM/dd HH:mm}.";
         sending = false;
         await Load();
     }
@@ -663,7 +562,6 @@
         exporting = false;
     }
 
-    // ── Excel: pending ──────────────────────────────────────────────────────
     async Task ExportExcel()
     {
         if (pending is null || !pending.Any()) return;
@@ -684,9 +582,9 @@
 
         var meta = new
         {
-            diraya = "الوادي",
-            qabada = "المركز الجواري الدبيلة",
-            date = DateTime.Today.ToString("dd/MM/yyyy"),
+            diraya = org.Diraya,
+            qabada = org.Qabada,
+            date = DateTime.Today.ToString("yyyy/MM/dd"),
             batchLabel = (string?)null
         };
 
@@ -695,7 +593,6 @@
         exportingExcel = false;
     }
 
-    // ── Excel: history batch ────────────────────────────────────────────────
     async Task ExportHistoryExcel(List<Declaration> batch, string filename)
     {
         var rows = BuildExcelRows(batch);
@@ -710,13 +607,13 @@
             "", "", ""
         });
 
-        var sentDate = batch.First().Annex6SentAt?.ToString("dd/MM/yyyy") ?? DateTime.Today.ToString("dd/MM/yyyy");
+        var sentDate = batch.First().Annex6SentAt?.ToString("yyyy/MM/dd") ?? DateTime.Today.ToString("yyyy/MM/dd");
         var batchNum = batch.First().Annex6BatchNumber?.ToString() ?? "";
 
         var meta = new
         {
-            diraya = "الوادي",
-            qabada = "المركز الجواري الدبيلة",
+            diraya = org.Diraya,
+            qabada = org.Qabada,
             date = sentDate,
             batchLabel = batchNum
         };
@@ -724,7 +621,6 @@
         await JS.InvokeVoidAsync("exportAnnex6Excel", rows, filename, meta);
     }
 
-    // ── Shared row builder ──────────────────────────────────────────────────
     static List<object[]> BuildExcelRows(List<Declaration> list) =>
         list.Select(d => new object[]
         {
@@ -736,14 +632,11 @@
             d.PR,
             Math.Round(d.Droit * 0.30m, 0, MidpointRounding.AwayFromZero),
             d.DafaaWahida ? "ك" : "ق",
-            "",
-            ""
+            "", ""
         }).ToList<object[]>();
 
     async Task ExportHistoryPdf(string elementId, string filename)
-    {
-        await JS.InvokeVoidAsync("exportAnnex6Pdf", elementId, filename);
-    }
+        => await JS.InvokeVoidAsync("exportAnnex6Pdf", elementId, filename);
 
     static string Fmt(decimal v) =>
         v == 0 ? "-" : string.Format("{0:N0}", v).Replace(",", "\u00A0") + ",00";

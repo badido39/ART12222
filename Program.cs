@@ -27,6 +27,7 @@ builder.Services.AddScoped<INatureImpotService, NatureImpotService>();
 builder.Services.AddScoped<IArt122PdfService, Art122PdfService>();
 
 builder.Services.AddScoped<IDeclarationService, DeclarationService>();
+builder.Services.AddScoped<IAppSettingsService, AppSettingsService>();
 
 
 

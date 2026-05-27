@@ -2,6 +2,7 @@
 @using ART122.Data
 @using ART122.Services
 @inject IDeclarationService DeclarationService
+@inject IAppSettingsService AppSettingsService
 @inject IJSRuntime JS
 
 <div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
@@ -20,7 +21,9 @@
 </div>
 
 <div id="register-content" dir="rtl" style="background:white;padding:20px;font-family:'Arial',sans-serif;">
-
+    <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#666;">
+        الملحق 05
+    </div>
     <div class="text-center mb-2">
         <div style="font-weight:bold;font-size:1.05rem;">
             الجمهورية الجزائرية الديمقراطية الشعبية
@@ -29,8 +32,8 @@
     </div>
 
     <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:.85rem;">
-        <div>مديرية: الوادي</div>
-        <div>قباضة الضرائب لـ: المركز الجواري الدبيلة</div>
+        <div>مديرية الضرائب لولاية @org.Diraya</div>
+        <div>قباضة الضرائب لـ: @org.Qabada</div>
     </div>
 
     <div style="text-align:center;font-weight:bold;border:2px solid black;padding:8px;margin-bottom:16px;">
@@ -80,7 +83,7 @@
                                 <span style="font-size:.65rem;color:#999;margin-right:4px;">⏳</span>
                             }
                         </td>
-                        <td style="@td;">@d.Date.ToString("dd/MM/yyyy")</td>
+                        <td style="@td;">@d.Date.ToString("yyyy/MM/dd")</td>
                         <td style="@td;">@Fmt(d.MontantTotal)</td>
                         <td style="@td;">@Fmt(d.MontantRestant)</td>
                         <td style="@td;">@Fmt(d.PA)</td>
@@ -94,7 +97,7 @@
                                 <br />
                                 @d.DGDecisionReference
                                 <br />
-                                @d.DGDecisionDate?.ToString("dd/MM/yyyy")
+                                @d.DGDecisionDate?.ToString("yyyy/MM/dd")
                             }
                             else if (d.DGDecision == DGDecisionStatus.Refusee)
                             {
@@ -130,22 +133,19 @@
 
         <div style="display:flex;justify-content:space-between;margin-top:30px;font-size:.82rem;">
             <div>
-                حررت بـ: المركز الجواري الدبيلة &nbsp;&nbsp;
-                في: @DateTime.Today.ToString("dd/MM/yyyy")
+                حررت بـ: @org.Qabada &nbsp;&nbsp;
+                في: @DateTime.Today.ToString("yyyy/MM/dd")
             </div>
             <div style="text-align:center;">
                 قابض الضرائب:<br /><br /><br />
-                (الإمضاء والختم)
+              
             </div>
         </div>
 
-        <div style="text-align:left;margin-top:10px;font-size:.7rem;color:#666;">
-            الملحق 05
-        </div>
+      
     }
 </div>
 
-@* Load libraries from CDN *@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -155,7 +155,7 @@
         if (!el) return;
 
         const canvas = await html2canvas(el, {
-            scale: 2,          // 2× for sharp text
+            scale: 2,
             useCORS: true,
             backgroundColor: '#ffffff'
         });
@@ -163,18 +163,13 @@
         const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
 
-        // A4 landscape: 297 × 210 mm  |  portrait: 210 × 297 mm
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
 
-        // Scale image to fit page width
-        const imgW = canvas.width;
-        const imgH = canvas.height;
-        const ratio = pageW / imgW;
-        const scaledH = imgH * ratio;
+        const ratio = pageW / canvas.width;
+        const scaledH = canvas.height * ratio;
 
-        // If content is taller than one page, add more pages
         let yOffset = 0;
         while (yOffset < scaledH) {
             if (yOffset > 0) pdf.addPage();
@@ -189,14 +184,15 @@
 
 @code {
     List<Declaration>? declarations;
+    AppSettings org = new();
     bool exporting = false;
 
-    // Inline style helpers (avoids Blazor CSS isolation issues in print)
     const string th = "border:1px solid #fff;padding:5px 4px;vertical-align:middle;";
     const string td = "border:1px solid #ddd;padding:4px 5px;vertical-align:middle;";
 
     protected override async Task OnInitializedAsync()
     {
+        org = await AppSettingsService.GetAsync();
         declarations = await DeclarationService.GetAllAsync();
     }
 
@@ -204,7 +200,7 @@
     {
         exporting = true;
         StateHasChanged();
-        await Task.Delay(50); // let spinner render
+        await Task.Delay(50);
         await JS.InvokeVoidAsync("exportRegisterPdf");
         exporting = false;
     }

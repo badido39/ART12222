@@ -1,5 +1,13 @@
 ﻿namespace ART122.Data
 {
+
+    public class AppSettings
+    {
+        public int Id { get; set; } = 1;              // toujours 1 — ligne unique
+        public string Diraya { get; set; } = "الوادي";
+        public string Qabada { get; set; } = "المركز الجواري الدبيلة";
+        public string Moslaha { get; set; } = "المصلحة";
+    }
     public class Impot
     {
         public int Id { get; set; }
