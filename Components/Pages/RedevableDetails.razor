@@ -363,156 +363,151 @@ else
         }
 
         @* ══ DG Decision card ═════════════════════════════════════════════════ *@
+        @* ══ DG Decision card ═════════════════════════════════════════════════ *@
         @if (declaration is not null)
         {
+            var dgLocked = declaration.Annex6SentAt is null;
+
             <div class="col-12">
-                <div class="card shadow-sm border-2 @DGCardBorder">
-                    <div class="card-header fw-semibold @DGCardHeader text-white
-                                        d-flex justify-content-between align-items-center">
+                <div class="card shadow-sm border-2 @(dgLocked ? "border-secondary" : DGCardBorder)">
+                    <div class="card-header fw-semibold text-white
+                                d-flex justify-content-between align-items-center
+                                @(dgLocked ? "bg-secondary" : DGCardHeader)">
                         <span>⚖️ قرار المدير العام</span>
-                        <span class="badge bg-white @DGBadgeText fs-6">@DGDecisionLabel</span>
+                        <span class="badge bg-white @(dgLocked ? "text-secondary" : DGBadgeText) fs-6">
+                            @(dgLocked ? "⏳ لم يُرسل بعد" : DGDecisionLabel)
+                        </span>
                     </div>
                     <div class="card-body">
 
-                        @if (declaration.DGDecision != DGDecisionStatus.EnAttente)
+                        @if (dgLocked)
                         {
-                            <dl class="row mb-0">
-                                <dt class="col-md-3">القرار</dt>
-                                <dd class="col-md-9">
-                                    @if (declaration.DGDecision == DGDecisionStatus.Acceptee)
-                                    {
-                                        <span class="badge bg-success fs-6">✅ مقبول</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger fs-6">❌ مرفوض</span>
-                                    }
-                                </dd>
-
-                                <dt class="col-md-3">تاريخ القرار</dt>
-                                <dd class="col-md-9">
-                                    @declaration.DGDecisionDate?.ToString("dd/MM/yyyy")
-                                </dd>
-
-                                <dt class="col-md-3">رقم القرار</dt>
-                                <dd class="col-md-9 fw-semibold">
-                                    @declaration.DGDecisionReference
-                                </dd>
-
-                                @if (!string.IsNullOrWhiteSpace(declaration.DGDecisionNote))
-                                {
-                                    <dt class="col-md-3">ملاحظات</dt>
-                                    <dd class="col-md-9">@declaration.DGDecisionNote</dd>
-                                }
-
-                                @if (declaration.DGDecision == DGDecisionStatus.Acceptee)
-                                {
-                                    <dt class="col-md-3 border-top pt-2">إلغاء غ. الوعاء (PA)</dt>
-                                    <dd class="col-md-9 border-top pt-2 text-success fw-bold">
-                                        @Fmt(declaration.AlghaPA)
-                                    </dd>
-                                    <dt class="col-md-3">إلغاء غ. التحصيل (PR)</dt>
-                                    <dd class="col-md-9 text-success fw-bold">
-                                        @Fmt(declaration.AlghaPR)
-                                    </dd>
-                                    <dt class="col-md-3 fw-bold">إجمالي الإلغاء</dt>
-                                    <dd class="col-md-9 fw-bold text-success fs-5">
-                                        @Fmt(declaration.AlghaPA + declaration.AlghaPR)
-                                    </dd>
-                                }
-                            </dl>
-
-                            <button class="btn btn-sm btn-outline-secondary mt-3"
-                                    @onclick="() => dgEditing = true">
-                                ✏️ تعديل القرار
-                            </button>
-                        }
-
-                        @if (declaration.DGDecision == DGDecisionStatus.EnAttente || dgEditing)
-                        {
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <label class="form-label fw-semibold">القرار</label>
-                                    <div class="d-flex gap-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio"
-                                                   name="dgDecision" id="dgAccept"
-                                                   checked="@(dgDecision == DGDecisionStatus.Acceptee)"
-                                                   @onchange="() => dgDecision = DGDecisionStatus.Acceptee" />
-                                            <label class="form-check-label text-success fw-semibold"
-                                                   for="dgAccept">✅ مقبول</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio"
-                                                   name="dgDecision" id="dgRefuse"
-                                                   checked="@(dgDecision == DGDecisionStatus.Refusee)"
-                                                   @onchange="() => dgDecision = DGDecisionStatus.Refusee" />
-                                            <label class="form-check-label text-danger fw-semibold"
-                                                   for="dgRefuse">❌ مرفوض</label>
-                                        </div>
+                            <div class="alert alert-secondary d-flex align-items-center gap-2 mb-0">
+                                <span style="font-size:1.5rem;">📭</span>
+                                <div>
+                                    <strong>لم يتم إرسال الملف إلى المديرية بعد.</strong>
+                                    <div class="text-muted small mt-1">
+                                        يجب إرسال الملحق 06 أولاً قبل تسجيل قرار المدير العام.
                                     </div>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">
-                                        تاريخ القرار <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="date" class="form-control" @bind="dgDecisionDate" />
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">
-                                        رقم القرار <span class="text-danger">*</span>
-                                    </label>
-                                    <input class="form-control" placeholder="DG-2026-001"
-                                           @bind="dgDecisionReference" />
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">ملاحظات</label>
-                                    <input class="form-control" placeholder="سبب القرار..."
-                                           @bind="dgDecisionNote" />
-                                </div>
-
-                                @if (dgDecision == DGDecisionStatus.Acceptee)
-                                {
-                                    <div class="col-12">
-                                        <div class="alert alert-success py-2 mb-0 d-flex gap-4 align-items-center flex-wrap">
-                                            <span>⚖️ سيتم إلغاء الغرامات تلقائياً عند الحفظ:</span>
-                                            <span>غ. الوعاء: <strong>@Fmt(declaration.PA)</strong></span>
-                                            <span>غ. التحصيل: <strong>@Fmt(declaration.PR)</strong></span>
-                                            <span class="ms-auto fw-bold text-success fs-6">
-                                                الإجمالي: @Fmt(declaration.PA + declaration.PR)
-                                            </span>
-                                        </div>
-                                    </div>
-                                }
-
-                                @if (!string.IsNullOrEmpty(dgError))
-                                {
-                                    <div class="col-12">
-                                        <div class="alert alert-danger py-2">⚠️ @dgError</div>
-                                    </div>
-                                }
-
-                                <div class="col-12 d-flex gap-2">
-                                    <button class="btn btn-primary"
-                                            disabled="@(dgSaving || string.IsNullOrWhiteSpace(dgDecisionReference))"
-                                            @onclick="SaveDGDecision">
-                                        @if (dgSaving)
-                                        {
-                                            <span class="spinner-border spinner-border-sm me-1"></span>
-                                        }
-                                        💾 حفظ القرار
-                                    </button>
-                                    @if (dgEditing)
-                                    {
-                                        <button class="btn btn-outline-secondary"
-                                                @onclick="() => dgEditing = false">
-                                            ❌ إلغاء
-                                        </button>
-                                    }
                                 </div>
                             </div>
                         }
+                        else
+                        {
+                            @if (declaration.DGDecision == DGDecisionStatus.Acceptee)
+                            {
+                                <dt class="col-md-3 border-top pt-2">إلغاء غ. الوعاء (PA)</dt>
+                                <dd class="col-md-9 border-top pt-2 text-success fw-bold">
+                                    @Fmt(declaration.AlghaPA)
+                                </dd>
+                                <dt class="col-md-3">إلغاء غ. التحصيل (PR)</dt>
+                                <dd class="col-md-9 text-success fw-bold">
+                                    @Fmt(declaration.AlghaPR)
+                                </dd>
+
+                                <dt class="col-md-3">تخفيض 30% من الحقوق</dt>
+                                <dd class="col-md-9 fw-bold" style="color:#6f42c1">
+                                    @Fmt(declaration.Droit * 0.30m)
+                                </dd>
+
+                                <dt class="col-md-3 fw-bold">إجمالي الإلغاء</dt>
+                                <dd class="col-md-9 fw-bold text-success fs-5">
+                                    @Fmt(declaration.AlghaPA + declaration.AlghaPR + declaration.Droit * 0.30m)
+                                </dd>
+                            }
+
+                            @if (declaration.DGDecision == DGDecisionStatus.EnAttente || dgEditing)
+                            {
+                                <div class="row g-3">
+
+                                    @if (!dgEditing)
+                                    {
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold">القرار</label>
+                                            <div class="d-flex gap-4">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio"
+                                                           name="dgDecision" id="dgAccept"
+                                                           checked="@(dgDecision == DGDecisionStatus.Acceptee)"
+                                                           @onchange="() => dgDecision = DGDecisionStatus.Acceptee" />
+                                                    <label class="form-check-label text-success fw-semibold"
+                                                           for="dgAccept">✅ مقبول</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio"
+                                                           name="dgDecision" id="dgRefuse"
+                                                           checked="@(dgDecision == DGDecisionStatus.Refusee)"
+                                                           @onchange="() => dgDecision = DGDecisionStatus.Refusee" />
+                                                    <label class="form-check-label text-danger fw-semibold"
+                                                           for="dgRefuse">❌ مرفوض</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    <div class="col-md-4">
+                                        <label class="form-label">
+                                            تاريخ القرار <span class="text-danger">*</span>
+                                        </label>
+                                        <input type="date" class="form-control" @bind="dgDecisionDate" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">
+                                            رقم القرار <span class="text-danger">*</span>
+                                        </label>
+                                        <input class="form-control" placeholder="DG-2026-001"
+                                               @bind="dgDecisionReference" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">ملاحظات</label>
+                                        <input class="form-control" placeholder="سبب القرار..."
+                                               @bind="dgDecisionNote" />
+                                    </div>
+
+                                    @if (!dgEditing && dgDecision == DGDecisionStatus.Acceptee)
+                                    {
+                                        <div class="col-12">
+                                            <div class="alert alert-success py-2 mb-0 d-flex gap-4 align-items-center flex-wrap">
+                                                <span>⚖️ سيتم إلغاء الغرامات تلقائياً عند الحفظ:</span>
+                                                <span>غ. الوعاء: <strong>@Fmt(declaration.PA)</strong></span>
+                                                <span>غ. التحصيل: <strong>@Fmt(declaration.PR)</strong></span>
+                                                <span class="ms-auto fw-bold text-success fs-6">
+                                                    الإجمالي: @Fmt(declaration.PA + declaration.PR)
+                                                </span>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    @if (!string.IsNullOrEmpty(dgError))
+                                    {
+                                        <div class="col-12">
+                                            <div class="alert alert-danger py-2">⚠️ @dgError</div>
+                                        </div>
+                                    }
+
+                                    <div class="col-12 d-flex gap-2">
+                                        <button class="btn btn-primary"
+                                                disabled="@(dgSaving || string.IsNullOrWhiteSpace(dgDecisionReference))"
+                                                @onclick="SaveDGDecision">
+                                            @if (dgSaving)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                            }
+                                            💾 حفظ القرار
+                                        </button>
+                                        @if (dgEditing)
+                                        {
+                                            <button class="btn btn-outline-secondary"
+                                                    @onclick="() => dgEditing = false">
+                                                ❌ إلغاء
+                                            </button>
+                                        }
+                                    </div>
+
+                                </div>
+                            }
+                        }
+
                     </div>
                 </div>
             </div>

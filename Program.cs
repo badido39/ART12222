@@ -19,8 +19,6 @@ builder.Services.AddDbContext<ImpotDbContext>(options =>
 );
 
 
-
-
 builder.Services.AddScoped<IRedevableService, RedevableService>();
 builder.Services.AddScoped<IImpotService, ImpotService>();
 builder.Services.AddScoped<INatureImpotService, NatureImpotService>();
@@ -64,12 +62,12 @@ using (var scope = app.Services.CreateScope())
     if (!db.NatureImpots.Any())
     {
         db.NatureImpots.AddRange(
-            new NatureImpot { Name = "TVA" },
-            new NatureImpot { Name = "TAP" },
-            new NatureImpot { Name = "IBS" },
             new NatureImpot { Name = "IRG" },
-            new NatureImpot { Name = "TAIC" },
-            new NatureImpot { Name = "Timbre" }
+            new NatureImpot { Name = "IBS" },
+            new NatureImpot { Name = "TAP" },
+            new NatureImpot { Name = "TVA" },
+            new NatureImpot { Name = "IFU" },
+            new NatureImpot { Name = "Autre" }
         );
 
         db.SaveChanges();

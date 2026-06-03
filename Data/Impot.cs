@@ -41,14 +41,14 @@
     public class RedevableInfo
     {
         public int Id { get; set; }
-        public int BP { get; set; }
+        public string BP { get; set; }
         public string FullName { get; set; } = string.Empty; // Maybe Raison Sociale for company
         public string FilsDe { get; set; } = string.Empty; // For individuals
         public string Adresse { get; set; } = string.Empty;
-        public int Article { get; set; }
+        public string Article { get; set; } = string.Empty;
         public string Telephone { get; set; } = string.Empty;
         public string Etablissement { get; set; } = string.Empty;
-        public int NIF { get; set; }
+        public string NIF { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Activite { get; set; } = string.Empty;
         //new 
@@ -58,6 +58,9 @@
 
         //new Date declartation pour Saisis les Ancien Decalaration
         public DateTime DateDeclaration { get; set; } = DateTime.Now;
+
+
+        public SecteurActivite Secteur { get; set; } = SecteurActivite.Prive;
 
         // Navigation
         public List<Impot> Impots { get; set; } = new();
@@ -104,6 +107,13 @@
         // ── Annex 5 flag (accepted = appears validated in register) ────────────────
         // Derived: DGDecision == Acceptee, no extra column needed
         public bool IsValidatedByDG => DGDecision == DGDecisionStatus.Acceptee;
+
+
+        // ── Computed: is fully paid ────────────────────────────────────────────────
+        public bool EstPaye =>
+            DafaaWahida
+                ? !string.IsNullOrEmpty(NumeroQuittance)
+                : Versements.Any() && Versements.All(v => v.EstPaye);
     }
 
 
@@ -127,6 +137,13 @@
         public int DeclarationId { get; set; }
         public Declaration Declaration { get; set; } = null!;
         
+    }
+
+    public enum SecteurActivite
+    {
+        Prive,      // secteur privé et autre (default)
+        Public,     // secteur public
+        Etranger    // entreprises étrangères
     }
     public enum VersementStatus
     {

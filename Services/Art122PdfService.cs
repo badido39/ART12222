@@ -11,7 +11,7 @@ public class Art122FormDto
 {
     // ── Identity ─────────────────────────────────────────────────────────────
     public string FullName { get; set; } = string.Empty;
-    public int BP { get; set; }
+    public string BP { get; set; }
     public string Etablissement { get; set; } = string.Empty;
     public string Activite { get; set; } = string.Empty;
     public string NIF { get; set; } = string.Empty;

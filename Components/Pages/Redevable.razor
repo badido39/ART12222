@@ -94,6 +94,7 @@
                                             }
                                             🖨 طباعة
                                         </button>
+                                      
                                     }
                                     else
                                     {
@@ -101,6 +102,12 @@
                                                 style="min-width:110px;"
                                                 @onclick="() => OpenPrintModal(r)">
                                             📝 تسجيل الطلب
+                                        </button>
+
+                                        <button class="btn btn-sm btn-outline-info"
+                                                style="min-width:110px;"
+                                                @onclick="() => PreviewPdf(r)">
+                                            👁 معاينة
                                         </button>
                                     }
 
@@ -190,8 +197,9 @@
                                 📅 تاريخ التصريح <span class="text-danger">*</span>
                             </label>
                             <input type="date" class="form-control"
-                                   @bind="declarationDate"
-                                   max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                                   value="@declarationDate.ToString("yyyy-MM-dd")"
+                                   max="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                   @onchange="OnDeclarationDateChanged" />
                         </div>
                     </div>
 
@@ -306,10 +314,16 @@
                     {
                         <div class="row g-2 mt-2">
                             <div class="col-md-6">
-                                <label class="form-label fw-semibold">رقم الوصل</label>
-                                <input class="form-control"
+                                <label class="form-label fw-semibold">
+                                    رقم الوصل <span class="text-danger">*</span>
+                                </label>
+                                <input class="form-control @(showQuittanceError ? "is-invalid" : "")"
                                        placeholder="رقم الوصل..."
                                        @bind="dafaaNumeroQuittance" />
+                                @if (showQuittanceError)
+                                {
+                                    <div class="invalid-feedback">رقم الوصل مطلوب</div>
+                                }
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">تاريخ الدفع</label>
@@ -357,6 +371,14 @@
                 </div>
                 <div class="modal-body">
                     <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">القطاع</label>
+                            <select class="form-select" @bind="editModel.Secteur">
+                                <option value="@SecteurActivite.Prive">🏢 خاص وآخر</option>
+                                <option value="@SecteurActivite.Public">🏛 عام</option>
+                                <option value="@SecteurActivite.Etranger">🌍 أجنبي</option>
+                            </select>
+                        </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">رقم BP</label>
                             <input class="form-control" @bind="editModel.BP" />
@@ -445,8 +467,86 @@
         </div>
     </div>
 }
+@if (showPreviewModal)
+{
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl" style="max-width:90vw;">
+            <div class="modal-content border-0 shadow">
+
+                <div class="modal-header text-white"
+                     style="background:linear-gradient(135deg,#1a1a2e,#2c2c54);">
+                    <h5 class="modal-title">👁 معاينة التصريح</h5>
+                    <button class="btn-close btn-close-white" @onclick="ClosePreviewModal"></button>
+                </div>
+
+                <div class="modal-body p-2" style="height:80vh;">
+                    @if (previewLoading)
+                    {
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="spinner-border text-primary me-2"></div>
+                            <span>جارٍ تحميل المعاينة...</span>
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(previewError))
+                    {
+                        <div class="alert alert-danger">⚠️ @previewError</div>
+                    }
+                    else if (previewPdfUrl != null)
+                    {
+                        <iframe src="@previewPdfUrl"
+                                style="width:100%;height:100%;border:none;"
+                                title="معاينة PDF">
+                        </iframe>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" @onclick="ClosePreviewModal">
+                        ❌ إغلاق
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
 
 @code {
+    void OnDeclarationDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var d))
+        {
+            declarationDate = d;
+            if (!printDafaaWahida) BuildRows(); // ← rebuild if aqsat mode is active
+        }
+    }
+    bool showPreviewModal = false;
+    string? previewPdfUrl = null;
+    bool previewLoading = false;
+    string? previewError = null;
+    async Task PreviewPdf(RedevableInfo r)
+    {
+        previewLoading = true;
+        previewError = null;
+        showPreviewModal = true;
+        StateHasChanged();
+        try
+        {
+            var bytes = await PdfService.FillFromRedevableAsync(r.Id);
+            previewPdfUrl = $"data:application/pdf;base64,{Convert.ToBase64String(bytes)}";
+        }
+        catch (Exception ex) { previewError = ex.Message; }
+        finally { previewLoading = false; }
+    }
+
+    void ClosePreviewModal()
+    {
+        showPreviewModal = false;
+        previewPdfUrl = null;
+        previewError = null;
+    }
+    bool showQuittanceError = false;
 
     int? printingPdfId = null;
     List<RedevableInfo>? redevables;
@@ -498,8 +598,8 @@
     static readonly DateTime Deadline = new(2026, 12, 31);
 
     int MaxDofaa => Math.Max(1,
-        ((Deadline.Year - DateTime.Today.Year) * 12)
-        + Deadline.Month - DateTime.Today.Month + 1);
+        ((Deadline.Year - declarationDate.Year) * 12)
+        + Deadline.Month - declarationDate.Month + 1);
 
     decimal SingleInstallment =>
         nbrDofaa > 0 ? Math.Round(printMontantRestant / nbrDofaa, 0) : 0;
@@ -524,6 +624,8 @@
 
     void ClosePrintModal()
     {
+        showQuittanceError = false;   // ← add
+
         showPrintModal = false;
         printTarget = null;
         printError = null;
@@ -535,6 +637,8 @@
 
     void SetPayMode(bool dafaa)
     {
+        showQuittanceError = false;   // ← add
+
         printDafaaWahida = dafaa;
         if (!dafaa) BuildRows(); else versementRows = [];
     }
@@ -552,7 +656,7 @@
         var per = Math.Round(printMontantRestant / nbrDofaa, 0);
         for (int i = 0; i < nbrDofaa; i++)
         {
-            var date = DateTime.Today.AddMonths(i);
+            var date = declarationDate.AddMonths(i);  // ← was DateTime.Today
             var amount = i == nbrDofaa - 1 ? printMontantRestant - per * (nbrDofaa - 1) : per;
             versementRows.Add(new VersementInput
             {
@@ -572,6 +676,14 @@
     async Task ConfirmPrint()
     {
         if (printTarget is null) return;
+        // ── Validate quittance when dafaa wahida ──────────────────────────────
+        if (printDafaaWahida && string.IsNullOrWhiteSpace(dafaaNumeroQuittance))
+        {
+            showQuittanceError = true;
+            return;
+        }
+        showQuittanceError = false;
+
         printLoading = true;
         printError = null;
         try

@@ -1,50 +1,61 @@
 ﻿<div class="top-row navbar navbar-dark bg-gradient-custom">
     <div class="container-fluid d-flex justify-content-center align-items-center">
-
         <a class="navbar-brand fw-semibold text-white m-0" href="">
             Article 122
         </a>
-
     </div>
 </div>
-
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
-
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill" aria-hidden="true"></span>
                 الرئيسية
             </NavLink>
         </div>
-
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/redevables">
                 <span class="bi bi-people-fill" aria-hidden="true"></span>
                 قائمة المنخرطين
             </NavLink>
         </div>
-
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/annex5">
                 <span class="bi bi-file-earmark-text-fill" aria-hidden="true"></span>
                 الملحق 05
             </NavLink>
         </div>
-
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/annex6">
                 <span class="bi bi-file-earmark-richtext-fill" aria-hidden="true"></span>
                 الملحق 06
             </NavLink>
         </div>
-
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/annex9">
                 <span class="bi bi-journal-text" aria-hidden="true"></span>
                 الملحق 09
+            </NavLink>
+        </div>
+
+        @* ── Statistiques ──────────────────────────────────────────────── *@
+        <div class="nav-item px-3 mt-1">
+            <div class="nav-link text-white-50 small fw-semibold"
+                 style="font-size:.7rem;letter-spacing:.05rem;pointer-events:none;">
+                ── الوضعيات الإحصائية
+            </div>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/stat1">
+                <span class="bi bi-bar-chart-fill" aria-hidden="true"></span>
+                وضعية حسب المنتج
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/stat2">
+                <span class="bi bi-pie-chart-fill" aria-hidden="true"></span>
+                وضعية حسب القطاع
             </NavLink>
         </div>
 
@@ -54,6 +65,5 @@
                 إعدادات
             </NavLink>
         </div>
-
     </nav>
 </div>

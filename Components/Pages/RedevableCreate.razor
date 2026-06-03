@@ -29,21 +29,41 @@
             <div class="row g-3">
 
                 <div class="col-md-4">
+                    <label class="form-label fw-semibold">القطاع</label>
+                    <select class="form-select" @bind="model.Secteur">
+                        <option value="@SecteurActivite.Prive">🏢 خاص وآخر</option>
+                        <option value="@SecteurActivite.Public">🏛 عام</option>
+                        <option value="@SecteurActivite.Etranger">🌍 أجنبي</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">رقم BP</label>
-                    <input type="number" class="form-control"
+                    <input type="text"
+                           class="form-control"
                            placeholder="رقم الشريك التجاري"
+                           maxlength="15"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
                            @bind="model.BP" />
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">رقم المادة</label>
-                    <input type="number" class="form-control"
+                    <input type="text"
+                           class="form-control"
                            placeholder="رقم المادة"
+                           maxlength="15"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
                            @bind="model.Article" />
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">NIF</label>
-                    <input type="number" class="form-control"
+                    <label class="form-label fw-semibold">رقم التعريف الجبائي</label>
+                    <input type="text"
+                           class="form-control"
                            placeholder="رقم التعريف الجبائي"
+                           maxlength="25"
+                           inputmode="numeric"
+                           pattern="[0-9]*"
                            @bind="model.NIF" />
                 </div>
 
@@ -304,6 +324,7 @@
 </div>
 
 @code {
+    public SecteurActivite Secteur { get; set; } = SecteurActivite.Prive;
 
     RedevableCreateDto model = new(){DateExtraitDeRole = DateTime.Now};
     ImpotCreateDto newImpot = new();

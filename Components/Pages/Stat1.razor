@@ -1,0 +1,260 @@
+﻿@page "/stat1"
+@using ART122.Data
+@using ART122.Services
+@using System.Globalization
+@inject IDeclarationService DeclarationService
+@inject IRedevableService RedevableService
+@inject INatureImpotService NatureService
+@inject IAppSettingsService AppSettingsService
+@inject IJSRuntime JS
+
+@* ── Toolbar ───────────────────────────────────────────────────────────────── *@
+<div class="d-flex justify-content-between align-items-center mb-3 d-print-none flex-wrap gap-2">
+    <a href="/" class="btn btn-outline-secondary btn-sm">← رجوع</a>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <label class="form-label mb-0 fw-semibold small">من:</label>
+        <input type="date" class="form-control form-control-sm" style="width:150px;"
+               @bind="dateFrom" />
+        <label class="form-label mb-0 fw-semibold small">إلى:</label>
+        <input type="date" class="form-control form-control-sm" style="width:150px;"
+               @bind="dateTo" />
+        <button class="btn btn-primary btn-sm" @onclick="Load">
+            🔍 عرض
+        </button>
+        <button class="btn btn-outline-dark btn-sm" @onclick="Print"
+                disabled="@exporting">
+            @if (exporting)
+            {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            🖨 طباعة
+        </button>
+    </div>
+</div>
+
+@* ── Printable content ─────────────────────────────────────────────────────── *@
+<div id="stat1-content" dir="ltr"
+     style="background:white;padding:20px;font-family:'Arial',sans-serif;font-size:.78rem;">
+
+    @* Header *@
+    <div style="text-align:center;margin-bottom:4px;">
+        <div style="font-weight:bold;font-size:.9rem;">
+            RÉPUBLIQUE ALGÉRIENNE DÉMOCRATIQUE ET POPULAIRE
+        </div>
+        <div style="font-weight:bold;">MINISTÈRE DES FINANCES</div>
+    </div>
+
+    <div style="margin-bottom:6px;font-size:.75rem;">
+        <div>DIRECTION GENERALE DES IMPÔTS</div>
+        <div>DIRECTION REGIONAL DES IMPÔTS DE.... @org.Diraya</div>
+        <div>DIRECTION DES IMPÔTS DE...... @org.Qabada</div>
+    </div>
+
+    <div style="text-align:center;font-weight:bold;margin-bottom:4px;font-size:.85rem;">
+        SITUATION HEBDOMADAIRE DES MESURES D'ASSAINISSEMENT<br />
+        DES CRÉANCES FISCALES PAR PRODUIT (2012-2025)
+    </div>
+
+    <div style="text-align:center;margin-bottom:4px;font-size:.8rem;">
+        SEMAINE DU <u>&nbsp;&nbsp;@dateFrom.ToString("dd/MM/yyyy")&nbsp;&nbsp;</u>
+        AU <u>&nbsp;&nbsp;@dateTo.ToString("dd/MM/yyyy")&nbsp;&nbsp;</u>
+    </div>
+
+    <div style="text-align:center;margin-bottom:10px;font-size:.78rem;">
+        (Article 122 LF2026)
+    </div>
+
+    @* Table *@
+    <table style="width:100%;border-collapse:collapse;font-size:.7rem;">
+        <thead>
+            <tr style="background:#ddd;font-weight:bold;text-align:center;">
+                <td rowspan="2" style="@th;width:80px;">DRI/DIW</td>
+                <td rowspan="2" style="@th;width:90px;">
+                    Montant Total des droits en principal 70%
+                </td>
+                <td colspan="7" style="@th;">
+                    Montant des impôts et taxes encaissé (70%)
+                </td>
+                <td rowspan="2" style="@th;width:80px;">
+                    Montant de L'abattement (30%)
+                </td>
+                <td rowspan="2" style="@th;width:90px;">
+                    Montant de l'annulation des Pénalités d'assiette et de recouvrement (100%)
+                </td>
+                <td rowspan="2" style="@th;width:70px;">RAR</td>
+            </tr>
+            <tr style="background:#eee;font-weight:bold;text-align:center;">
+                <td style="@th;">IRG</td>
+                <td style="@th;">IBS</td>
+                <td style="@th;">TAP</td>
+                <td style="@th;">TVA</td>
+                <td style="@th;">IFU</td>
+                <td style="@th;">Autre</td>
+                <td style="@th;">Total</td>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in rows)
+            {
+                <tr style="text-align:center;">
+                    <td style="@td">@row.Label</td>
+                    <td style="@td">@Fmt(row.Montant70)</td>
+                    <td style="@td">@Fmt(row.IRG)</td>
+                    <td style="@td">@Fmt(row.IBS)</td>
+                    <td style="@td">@Fmt(row.TAP)</td>
+                    <td style="@td">@Fmt(row.TVA)</td>
+                    <td style="@td">@Fmt(row.IFU)</td>
+                    <td style="@td">@Fmt(row.Autre)</td>
+                    <td style="@td;font-weight:bold;">@Fmt(row.TotalEncaisse)</td>
+                    <td style="@td">@Fmt(row.Abattement30)</td>
+                    <td style="@td">@Fmt(row.AnnulationPenalites)</td>
+                    <td style="@td;color:red;font-weight:bold;">@Fmt(row.RAR)</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr style="background:#eee;font-weight:bold;text-align:center;">
+                <td style="@td">Total</td>
+                <td style="@td">@Fmt(rows.Sum(r => r.Montant70))</td>
+                <td style="@td">@Fmt(rows.Sum(r => r.IRG))</td>
+                <td style="@td">@Fmt(rows.Sum(r => r.IBS))</td>
+                <td style="@td">@Fmt(rows.Sum(r => r.TAP))</td>
+                <td style="@td">@Fmt(rows.Sum(r => r.TVA))</td>
+                <td style="@td">@Fmt(rows.Sum(r => r.IFU))</td>
+                <td style="@td">@Fmt(rows.Sum(r => r.Autre))</td>
+                <td style="@td">@Fmt(rows.Sum(r => r.TotalEncaisse))</td>
+                <td style="@td">@Fmt(rows.Sum(r => r.Abattement30))</td>
+                <td style="@td">@Fmt(rows.Sum(r => r.AnnulationPenalites))</td>
+                <td style="@td;color:red;">@Fmt(rows.Sum(r => r.RAR))</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    @* Signature *@
+    <div style="text-align:right;margin-top:30px;font-size:.78rem;">
+        A ................. le .................
+    </div>
+</div>
+
+@code {
+
+    const string th = "border:1px solid black;padding:4px 3px;vertical-align:middle;";
+    const string td = "border:1px solid #999;padding:3px 2px;";
+
+    DateTime dateFrom = DateTime.Today.AddDays(-7);
+    DateTime dateTo = DateTime.Today;
+    AppSettings org = new();
+    bool exporting = false;
+    List<Stat1Row> rows = [];
+
+    static readonly HashSet<string> KnownIRG = new(StringComparer.OrdinalIgnoreCase) { "IRG" };
+    static readonly HashSet<string> KnownIBS = new(StringComparer.OrdinalIgnoreCase) { "IBS" };
+    static readonly HashSet<string> KnownTAP = new(StringComparer.OrdinalIgnoreCase) { "TAP" };
+    static readonly HashSet<string> KnownTVA = new(StringComparer.OrdinalIgnoreCase) { "TVA" };
+    static readonly HashSet<string> KnownIFU = new(StringComparer.OrdinalIgnoreCase) { "IFU" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        org = await AppSettingsService.GetAsync();
+        await Load();
+    }
+
+    async Task Load()
+    {
+        var declarations = await DeclarationService.GetAllAsync();
+        var redevables = await RedevableService.GetAllAsync();
+
+        var filtered = declarations
+            .Where(d => d.Date.Date >= dateFrom.Date && d.Date.Date <= dateTo.Date)
+            .ToList();
+
+        var row = new Stat1Row { Label = org.Qabada };
+
+        foreach (var decl in filtered)
+        {
+            var rev = redevables.FirstOrDefault(r => r.Id == decl.RedevableInfoId);
+            if (rev == null) continue;
+
+            var montant70 = decl.MontantRestant;   // Droit × 70%
+
+            // Abattement and annulation only count when DG has accepted
+            var abattement = decl.IsValidatedByDG ? decl.Droit * 0.30m : 0m;
+            var annulation = decl.IsValidatedByDG ? (decl.AlghaPA + decl.AlghaPR) : 0m;
+
+            // What has actually been collected (paid installments or full payment)
+            var collected = decl.DafaaWahida
+                ? (decl.EstPaye ? montant70 : 0m)
+                : decl.Versements.Where(v => v.EstPaye).Sum(v => v.Montant);
+
+            // RAR = MontantTotal − collected − abattement − annulation
+            // Before DG: abattement=0, annulation=0 → RAR = MontantTotal − collected
+            // After DG accepted + fully paid → RAR = 0
+            var rar = Math.Max(0, decl.MontantTotal - collected - abattement - annulation);
+
+            row.Montant70 += montant70;
+            row.Abattement30 += abattement;
+            row.AnnulationPenalites += annulation;
+            row.RAR += rar;
+
+            // Distribute collected across tax natures proportionally
+            if (collected > 0)
+            {
+                var totalDroit = rev.Impots.Sum(i => i.Droit);
+                foreach (var imp in rev.Impots)
+                {
+                    var natureName = imp.NatureImpot?.Name ?? "";
+                    var share = totalDroit > 0
+                        ? collected * (imp.Droit / totalDroit)
+                        : 0m;
+
+                    if (KnownIRG.Contains(natureName)) row.IRG += share;
+                    else if (KnownIBS.Contains(natureName)) row.IBS += share;
+                    else if (KnownTAP.Contains(natureName)) row.TAP += share;
+                    else if (KnownTVA.Contains(natureName)) row.TVA += share;
+                    else if (KnownIFU.Contains(natureName)) row.IFU += share;
+                    else row.Autre += share;
+                }
+            }
+        }
+
+        rows = [row];
+    }
+
+    async Task Print()
+    {
+        exporting = true;
+        StateHasChanged();
+        try
+        {
+            await JS.InvokeVoidAsync("eval", @"
+                var w = window.open('', '_blank');
+                var content = document.getElementById('stat1-content').innerHTML;
+                w.document.write('<html><head><title>Stat1</title><style>body{margin:20px;font-family:Arial,sans-serif;}</style></head><body>' + content + '</body></html>');
+                w.document.close();
+                w.print();
+            ");
+        }
+        finally { exporting = false; }
+    }
+
+    static string Fmt(decimal v) =>
+        v == 0 ? "" :
+        string.Format("{0:N0}", Math.Round(v, 0, MidpointRounding.AwayFromZero))
+              .Replace(",", " ");
+
+    class Stat1Row
+    {
+        public string Label { get; set; } = "";
+        public decimal Montant70 { get; set; }
+        public decimal IRG { get; set; }
+        public decimal IBS { get; set; }
+        public decimal TAP { get; set; }
+        public decimal TVA { get; set; }
+        public decimal IFU { get; set; }
+        public decimal Autre { get; set; }
+        public decimal TotalEncaisse => IRG + IBS + TAP + TVA + IFU + Autre;
+        public decimal Abattement30 { get; set; }
+        public decimal AnnulationPenalites { get; set; }
+        public decimal RAR { get; set; }
+    }
+}

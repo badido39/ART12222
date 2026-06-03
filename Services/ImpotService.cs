@@ -11,7 +11,7 @@ public interface IRedevableService
     Task CreateFullAsync(RedevableCreateDto dto);
     Task<RedevableInfo> Create(RedevableCreateDto dto);
     Task AddImpots(int redevableId, List<ImpotCreateDto> impots); // ✅ ADD THIS
-    Task<ValidationResult> ValidateRedevable(int bp, int nif, int article);
+    Task<ValidationResult> ValidateRedevable(string bp, string nif, string article);
     Task UpdateAsync(RedevableInfo entity);
     Task<ValidationResult> DeleteAsync(int id);
     Task<List<RedevableTaxSummaryDto>> GetTaxSummaryAsync();
@@ -127,6 +127,8 @@ public class RedevableService : IRedevableService
     {
         var entity = new RedevableInfo
         {
+            Secteur = dto.Secteur,
+
             BP = dto.BP,
             FullName = dto.FullName,
             FilsDe = dto.FilsDe,
@@ -172,7 +174,7 @@ public class RedevableService : IRedevableService
 
         await _db.SaveChangesAsync();
     }
-    public async Task<ValidationResult> ValidateRedevable(int bp, int nif, int article)
+    public async Task<ValidationResult> ValidateRedevable(string bp, string nif, string article)
     {
         var exists = await _db.Redevables
             .AnyAsync(r =>

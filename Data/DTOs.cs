@@ -5,16 +5,17 @@
 
         public class RedevableCreateDto
         {
-            public int BP { get; set; }   // ✅ ADD THIS
+            public SecteurActivite Secteur { get; set; } = SecteurActivite.Prive;
+
+            public string BP { get; set; }   // ✅ ADD THIS
 
             public string FullName { get; set; } = "";
             public string FilsDe { get; set; } = "";
             public string Adresse { get; set; } = "";
-            public int Article { get; set; }
+            public string Article { get; set; } = string.Empty;
             public string Telephone { get; set; } = "";
             public string Etablissement { get; set; } = "";
-            public int NIF { get; set; }
-            public string Email { get; set; } = "";
+            public string NIF { get; set; } = string.Empty; public string Email { get; set; } = "";
             public string Activite { get; set; } = "";
 
 
@@ -51,7 +52,7 @@
         public class RedevableTaxSummaryDto
         {
             public int RedevableId { get; set; }
-            public int BP { get; set; }
+            public string BP { get; set; }
             public string FullName { get; set; } = "";
 
             public decimal TotalPA { get; set; }

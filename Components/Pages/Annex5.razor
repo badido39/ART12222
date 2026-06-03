@@ -50,16 +50,16 @@
         <table style="width:100%;border-collapse:collapse;font-size:.75rem;text-align:center;">
             <thead>
                 <tr style="background:#222;color:white;">
-                    <th style="@th;width:36px;">رقم<br />الترتيب</th>
+                    <th style="@th;width:50px;">رقم<br />الترتيب</th>
                     <th style="@th;">الاسم/اللقب أو التسمية الاجتماعية</th>
-                    <th style="@th;width:72px;">تاريخ التصريح</th>
-                    <th style="@th;width:90px;">المبلغ الكلي<br />للدين الجبائي</th>
-                    <th style="@th;width:90px;">الحقوق البسيطة<br />المستحقة (70%)</th>
-                    <th style="@th;width:80px;">غرامات<br />الوعاء</th>
-                    <th style="@th;width:80px;">غرامات<br />التحصيل</th>
-                    <th style="@th;width:80px;">مبلغ التخفيض<br />(30%)</th>
-                    <th style="@th;width:44px;">طريقة<br />التسوية</th>
-                    <th style="@th;">رقم وتاريخ<br />مقرر الإلغاء</th>
+                    <th style="@th;width:100px;">تاريخ التصريح</th>
+                    <th style="@th;width:120px;">المبلغ الكلي<br />للدين الجبائي</th>
+                    <th style="@th;width:120px;">الحقوق البسيطة<br />المستحقة (70%)</th>
+                    <th style="@th;width:120px;">غرامات<br />الوعاء</th>
+                    <th style="@th;width:120px;">غرامات<br />التحصيل</th>
+                    <th style="@th;width:120px;">مبلغ التخفيض<br />(30%)</th>
+                    <th style="@th;width:120px;">طريقة<br />التسوية</th>
+                    <th style="@th;;width:200px">رقم وتاريخ<br />مقرر الإلغاء</th>
                 </tr>
             </thead>
             <tbody>
@@ -93,17 +93,20 @@
                         <td style="@td;font-size:.72rem;">
                             @if (d.DGDecision == DGDecisionStatus.Acceptee)
                             {
-                                <span style="color:green;font-weight:bold;">✅</span>
-                                <br />
-                                @d.DGDecisionReference
-                                <br />
-                                @d.DGDecisionDate?.ToString("yyyy/MM/dd")
+                                <span>رقم : </span>
+                    
+                                <strong>@d.DGDecisionReference</strong>
+                                <span> بتاريخ : </span>
+                                <strong>@d.DGDecisionDate?.ToString("yy/MM/dd")</strong>
                             }
                             else if (d.DGDecision == DGDecisionStatus.Refusee)
                             {
-                                <span style="color:red;font-weight:bold;">❌ مرفوض</span>
-                                <br />
-                                @d.DGDecisionReference
+                                <span>رقم : </span>
+
+                                <strong>@d.DGDecisionReference</strong>
+                                <span> بتاريخ : </span>
+                                <strong>@d.DGDecisionDate?.ToString("yy/MM/dd")</strong>
+
                             }
                             else
                             {
